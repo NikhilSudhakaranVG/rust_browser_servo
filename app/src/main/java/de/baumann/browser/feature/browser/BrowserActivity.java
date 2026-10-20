@@ -560,6 +560,8 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
             sp.edit().putString("openTabs", "").apply();
         }
         currentRootView = null;
+        appContext = null;
+        NinjaWebView.clearBrowserController();
         super.onDestroy();
     }
 
@@ -577,6 +579,9 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
 
         if (currentAlbumController != null) currentAlbumController.deactivate();
         currentAlbumController = controller;
+        if (controller instanceof NinjaWebView) {
+            ninjaWebView = (NinjaWebView) controller;
+        }
         currentAlbumController.activate();
 
         View av = (View) controller;
@@ -1287,17 +1292,26 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
     public void closeAllIncognitoTabs() {
         List<AlbumController> toRemove = new ArrayList<>();
         for (AlbumController controller : BrowserContainer.list()) {
-            if (controller.isIncognito()) {
+            if (controller != null && controller.isIncognito()) {
                 toRemove.add(controller);
             }
         }
         for (AlbumController controller : toRemove) {
-            removeAlbum(controller);
+            if (controller.getAlbumView() != null && tab_container != null) {
+                tab_container.removeView(controller.getAlbumView());
+            }
+            BrowserContainer.remove(controller);
         }
-        NinjaToast.show(this, R.string.incognito_closed_all);
         if (BrowserContainer.size() < 1) {
             addAlbum(getString(R.string.home), BrowserUnit.URL_HOME, true);
+        } else {
+            AlbumController remaining = BrowserContainer.get(0);
+            if (remaining != null) {
+                showAlbum(remaining);
+            }
         }
+        NinjaToast.show(this, R.string.incognito_closed_all);
+        updateOmniBox();
     }
 
     private void setSelectedTab() {
@@ -1510,12 +1524,17 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
                 saveBookmark(title, url);
             } else if (resId == R.drawable.icon_file) {
                 PrintManager printManager = (PrintManager) getSystemService(Context.PRINT_SERVICE);
-                PrintDocumentAdapter printAdapter = ninjaWebView.createPrintDocumentAdapter(title);
-                Objects.requireNonNull(printManager).print(title, printAdapter, new PrintAttributes.Builder().build());
-                sp.edit().putBoolean("pdf_create", true).apply();
+                PrintDocumentAdapter printAdapter = (ninjaWebView != null) ? ninjaWebView.createPrintDocumentAdapter(title) : null;
+                if (printManager != null && printAdapter != null) {
+                    printManager.print(title != null ? title : "document", printAdapter, new PrintAttributes.Builder().build());
+                    sp.edit().putBoolean("pdf_create", true).apply();
+                } else {
+                    NinjaToast.show(this, R.string.app_error);
+                }
             } else if (resId == R.drawable.icon_menu_save) {
-                assert url != null;
-                NinjaDownloadListener.saveAs(activity, url, null, dialog_overflow);
+                if (url != null) {
+                    NinjaDownloadListener.saveAs(activity, url, null, dialog_overflow);
+                }
             } else if (resId == R.drawable.icon_fav_plus) {
                 sp.edit().putString("favoriteURL", url).apply();
                 NinjaToast.show(this, R.string.app_done);
@@ -2721,17 +2740,16 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
     }
     private File copyHtmlToCache(Context context, Uri uri) {
         try {
-            InputStream inputStream = context.getContentResolver().openInputStream(uri);
-            if (inputStream == null) return null;
             File cacheFile = new File(context.getCacheDir(), "temp_preview.html");
-            FileOutputStream outputStream = new FileOutputStream(cacheFile);
-            byte[] buffer = new byte[4096];
-            int bytesRead;
-            while ((bytesRead = inputStream.read(buffer)) != -1) {
-                outputStream.write(buffer, 0, bytesRead);
+            try (InputStream inputStream = context.getContentResolver().openInputStream(uri);
+                 FileOutputStream outputStream = new FileOutputStream(cacheFile)) {
+                if (inputStream == null) return null;
+                byte[] buffer = new byte[4096];
+                int bytesRead;
+                while ((bytesRead = inputStream.read(buffer)) != -1) {
+                    outputStream.write(buffer, 0, bytesRead);
+                }
             }
-            inputStream.close();
-            outputStream.close();
             return cacheFile;
         } catch (Exception e) {
             String text = context.getString(R.string.app_error) + ": " + e;
@@ -2857,14 +2875,21 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
                             + "</body></html>";
 
                     addAlbum(fileName, virtualFileUrl, true);
-                    ninjaWebView.getSettings().setDefaultTextEncodingName("utf-8");
+                    if (ninjaWebView.getSettings() != null) {
+                        ninjaWebView.getSettings().setDefaultTextEncodingName("utf-8");
+                    }
                     ninjaWebView.loadDataWithBaseURL(virtualFileUrl, htmlWrapper, "text/html", "UTF-8", null);
                 }
             } else {
                 sp.edit().putBoolean("show_overview", false).apply();
                 getIntent().setAction("");
-                addAlbum(null, Objects.requireNonNull(getIntent().getData()).toString(), true);
-                BrowserUnit.openInBackground(activity, ninjaWebView);
+                Uri data = getIntent().getData();
+                if (data != null) {
+                    addAlbum(null, data.toString(), true);
+                    BrowserUnit.openInBackground(activity, ninjaWebView);
+                } else {
+                    addAlbum(getString(R.string.home), BrowserUnit.URL_HOME, true);
+                }
             }
         } else if ("postLink".equals(action)) {
             sp.edit().putBoolean("show_overview", false).apply();
@@ -2905,15 +2930,14 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
     }
     private String readTextFromUri(Context context, Uri uri) {
         StringBuilder stringBuilder = new StringBuilder();
-        try {
-            InputStream inputStream = context.getContentResolver().openInputStream(uri);
+        try (InputStream inputStream = context.getContentResolver().openInputStream(uri)) {
             if (inputStream != null) {
-                BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    stringBuilder.append(line).append("\n");
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        stringBuilder.append(line).append("\n");
+                    }
                 }
-                inputStream.close();
             }
         } catch (Exception ignored) {}
         return stringBuilder.toString();
@@ -2953,6 +2977,7 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
 
         ninjaWebView.setOnLongClickListener(v -> {
             WebView.HitTestResult result = ninjaWebView.getHitTestResult();
+            if (result == null) return false;
             int type = result.getType();
 
             if (type == WebView.HitTestResult.IMAGE_TYPE) {
@@ -2983,11 +3008,10 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
                         // 3. WICHTIG: Die Textzeichen \n durch einen echten System-Zeilenumbruch ersetzen
                         value = value.replace("\\n", "\n").replace("\\r", "\r");
                     }
-                    final String finalValue = value;
+                    final String finalValue = value != null ? value : "";
 
                     runOnUiThread(() -> {
                         String textToShow;
-                        assert finalValue != null;
                         switch (finalValue) {
                             case "":
                             case "null":
@@ -3110,11 +3134,14 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
         snackbar.setAction(context.getString(R.string.app_ok), (v -> {
             PackageManager packageManager = context.getPackageManager();
             Intent intent = packageManager.getLaunchIntentForPackage(context.getPackageName());
-            assert intent != null;
-            ComponentName componentName = intent.getComponent();
-            Intent mainIntent = Intent.makeRestartActivityTask(componentName);
-            context.startActivity(mainIntent);
-            System.exit(0);
+            if (intent != null) {
+                ComponentName componentName = intent.getComponent();
+                if (componentName != null) {
+                    Intent mainIntent = Intent.makeRestartActivityTask(componentName);
+                    context.startActivity(mainIntent);
+                    System.exit(0);
+                }
+            }
         }));
         snackbar.show();
     }
