@@ -198,6 +198,7 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
     private AdapterRecord adapter;
     private ImageButton fab_overview;
     private FloatingActionButton fab_new_tab;
+    private FloatingActionButton fab_new_incognito_tab;
     private ListView listView;
 
     // Views
@@ -392,6 +393,32 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
             fab_new_tab.setOnClickListener(v -> {
                 addAlbum(getString(R.string.home), BrowserUnit.URL_HOME, true);
                 hideOverview();
+            });
+            fab_new_tab.setOnLongClickListener(v -> {
+                openIncognitoTab(BrowserUnit.URL_HOME);
+                hideOverview();
+                NinjaToast.show(this, R.string.toast_incognito_opened);
+                return true;
+            });
+        }
+        fab_new_incognito_tab = dialogViewOverview.findViewById(R.id.fab_new_incognito_tab);
+        if (fab_new_incognito_tab != null) {
+            fab_new_incognito_tab.setOnClickListener(v -> {
+                openIncognitoTab(BrowserUnit.URL_HOME);
+                hideOverview();
+            });
+            fab_new_incognito_tab.setOnLongClickListener(v -> {
+                if (BrowserContainer.hasIncognito()) {
+                    new MaterialAlertDialogBuilder(context)
+                            .setTitle(R.string.incognito_tab)
+                            .setMessage(R.string.incognito_close_all_confirm)
+                            .setIcon(R.drawable.icon_incognito)
+                            .setPositiveButton(R.string.app_ok, (dialog, which) -> closeAllIncognitoTabs())
+                            .setNegativeButton(R.string.app_cancel, null)
+                            .show();
+                    return true;
+                }
+                return false;
             });
         }
         HelperUnit.setupDialog(context, dialogOverview);
@@ -764,10 +791,12 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
                 listView.setVisibility(GONE);
                 tab_container.setVisibility(VISIBLE);
                 if (fab_new_tab != null) fab_new_tab.setVisibility(VISIBLE);
+                if (fab_new_incognito_tab != null) fab_new_incognito_tab.setVisibility(VISIBLE);
             }
 
             else if (menuItem.getItemId() == R.id.page_2) {
                 if (fab_new_tab != null) fab_new_tab.setVisibility(GONE);
+                if (fab_new_incognito_tab != null) fab_new_incognito_tab.setVisibility(GONE);
                 try {
                     RecordAction action = new RecordAction(context);
                     action.open(true);
@@ -802,6 +831,7 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
                 }); }
             else if (menuItem.getItemId() == R.id.page_3) {
                 if (fab_new_tab != null) fab_new_tab.setVisibility(GONE);
+                if (fab_new_incognito_tab != null) fab_new_incognito_tab.setVisibility(GONE);
                 fab_overview.setImageResource(R.drawable.icon_history);
                 overViewTab = getString(R.string.album_title_history);
                 intPage.set(R.id.page_3);
