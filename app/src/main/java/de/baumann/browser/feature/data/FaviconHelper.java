@@ -1,4 +1,6 @@
 package de.baumann.browser.feature.data;
+import de.baumann.browser.R;
+import de.baumann.browser.feature.common.BrowserUnit;
 import de.baumann.browser.feature.common.HelperUnit;
 
 import android.app.Activity;
