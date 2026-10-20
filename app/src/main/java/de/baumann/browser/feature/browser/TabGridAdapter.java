@@ -105,7 +105,7 @@ public class TabGridAdapter extends RecyclerView.Adapter<TabGridAdapter.TabViewH
 
         // ── 2. Theme Attribute Colors ──
         TypedValue tvPrimary = new TypedValue();
-        context.getTheme().resolveAttribute(com.google.android.material.R.attr.colorPrimary, tvPrimary, true);
+        context.getTheme().resolveAttribute(androidx.appcompat.R.attr.colorPrimary, tvPrimary, true);
         int colorPrimary = tvPrimary.data;
 
         TypedValue tvOutlineVariant = new TypedValue();
@@ -142,6 +142,10 @@ public class TabGridAdapter extends RecyclerView.Adapter<TabGridAdapter.TabViewH
             holder.tabIncognitoBadge.setVisibility(View.VISIBLE);
             holder.tabPreviewContainer.setBackgroundColor(colorIncognitoSurface);
             holder.tabBtnClose.setColorFilter(Color.parseColor("#A0AEC0"));
+            if (holder.tabBtnCloseCard != null) {
+                holder.tabBtnCloseCard.setCardBackgroundColor(Color.parseColor("#2D2838"));
+                holder.tabBtnCloseCard.setStrokeColor(Color.parseColor("#4A4458"));
+            }
         } else {
             holder.tabCard.setCardBackgroundColor(colorSurfaceContainer);
             holder.tabCardHeader.setBackgroundColor(colorSurfaceContainerHigh);
@@ -149,6 +153,10 @@ public class TabGridAdapter extends RecyclerView.Adapter<TabGridAdapter.TabViewH
             holder.tabIncognitoBadge.setVisibility(View.GONE);
             holder.tabPreviewContainer.setBackgroundColor(colorSurfaceContainerLow);
             holder.tabBtnClose.clearColorFilter();
+            if (holder.tabBtnCloseCard != null) {
+                holder.tabBtnCloseCard.setCardBackgroundColor(colorSurfaceContainerHigh);
+                holder.tabBtnCloseCard.setStrokeColor(colorOutlineVariant);
+            }
         }
 
         // ── 4. Active Tab Highlight Border ──
@@ -176,7 +184,7 @@ public class TabGridAdapter extends RecyclerView.Adapter<TabGridAdapter.TabViewH
                 holder.tabFavicon.setImageBitmap(fav);
             } else {
                 holder.tabFavicon.clearColorFilter();
-                FaviconHelper.setFavicon(context, holder.tabFavicon, url, R.drawable.icon_web);
+                FaviconHelper.setFavicon(context, holder.itemView, url, R.id.tab_favicon, R.drawable.icon_web);
             }
         }
 
@@ -227,6 +235,14 @@ public class TabGridAdapter extends RecyclerView.Adapter<TabGridAdapter.TabViewH
                 listener.onTabClosed(items.get(currentPos), currentPos);
             }
         });
+        if (holder.tabBtnCloseCard != null) {
+            holder.tabBtnCloseCard.setOnClickListener(v -> {
+                int currentPos = holder.getBindingAdapterPosition();
+                if (currentPos != RecyclerView.NO_POSITION) {
+                    listener.onTabClosed(items.get(currentPos), currentPos);
+                }
+            });
+        }
 
         holder.tabCard.setOnLongClickListener(v -> {
             int currentPos = holder.getBindingAdapterPosition();
@@ -249,6 +265,7 @@ public class TabGridAdapter extends RecyclerView.Adapter<TabGridAdapter.TabViewH
         public final ImageView tabFavicon;
         public final TextView tabTitle;
         public final ImageView tabBtnClose;
+        public final MaterialCardView tabBtnCloseCard;
         public final View tabDivider;
         public final FrameLayout tabPreviewContainer;
         public final ImageView tabThumbnail;
@@ -266,6 +283,7 @@ public class TabGridAdapter extends RecyclerView.Adapter<TabGridAdapter.TabViewH
             tabFavicon = itemView.findViewById(R.id.tab_favicon);
             tabTitle = itemView.findViewById(R.id.tab_title);
             tabBtnClose = itemView.findViewById(R.id.tab_btn_close);
+            tabBtnCloseCard = itemView.findViewById(R.id.tab_btn_close_card);
             tabDivider = itemView.findViewById(R.id.tab_divider);
             tabPreviewContainer = itemView.findViewById(R.id.tab_preview_container);
             tabThumbnail = itemView.findViewById(R.id.tab_thumbnail);

@@ -8,142 +8,59 @@
     android:background="?attr/colorSurfaceContainer"
     tools:ignore="Overdraw">
 
-    <!-- Top Header Bar: Title, Close All, Dismiss Button, and Segmented Mode Switcher -->
-    <LinearLayout
+    <!-- Top Header Bar: Clean & Minimal Title, Close All, and Dismiss Button -->
+    <RelativeLayout
         android:id="@+id/overview_header"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
+        android:layout_height="48dp"
         android:layout_alignParentTop="true"
         android:background="?attr/colorSurfaceContainer"
         android:elevation="2dp"
-        android:paddingTop="8dp"
-        android:paddingBottom="6dp">
+        android:paddingStart="16dp"
+        android:paddingEnd="12dp">
 
-        <RelativeLayout
-            android:layout_width="match_parent"
-            android:layout_height="42dp"
-            android:paddingStart="16dp"
-            android:paddingEnd="12dp">
-
-            <TextView
-                android:id="@+id/overview_title"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_centerVertical="true"
-                android:text="@string/album_title_tab"
-                android:textAppearance="?attr/textAppearanceTitleMedium"
-                android:textStyle="bold"
-                android:textColor="?attr/colorOnSurface" />
-
-            <LinearLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_alignParentEnd="true"
-                android:layout_centerVertical="true"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btn_close_all_tabs"
-                    style="@style/Widget.Material3.Button.TextButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="36dp"
-                    android:text="@string/tab_close_all"
-                    android:textSize="12sp"
-                    android:textColor="?attr/colorError"
-                    android:paddingStart="8dp"
-                    android:paddingEnd="8dp"
-                    android:visibility="gone" />
-
-                <ImageButton
-                    android:id="@+id/btn_close_overview"
-                    style="@style/Widget.Material3.Button.IconButton"
-                    android:layout_width="38dp"
-                    android:layout_height="38dp"
-                    android:src="@drawable/icon_close"
-                    app:tint="?attr/colorOnSurfaceVariant"
-                    android:contentDescription="@string/app_cancel"
-                    android:background="?attr/selectableItemBackgroundBorderless" />
-            </LinearLayout>
-
-        </RelativeLayout>
-
-        <!-- Material 3 Segmented Mode Switcher: Tabs (N) | Incognito (M) | Bookmarks | History -->
-        <HorizontalScrollView
-            android:layout_width="match_parent"
+        <TextView
+            android:id="@+id/overview_title"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:scrollbars="none"
-            android:fillViewport="true"
-            android:paddingStart="12dp"
-            android:paddingEnd="12dp"
-            android:paddingTop="4dp"
-            android:paddingBottom="4dp">
+            android:layout_centerVertical="true"
+            android:text="@string/album_title_tab"
+            android:textAppearance="?attr/textAppearanceTitleMedium"
+            android:textStyle="bold"
+            android:textColor="?attr/colorOnSurface" />
 
-            <com.google.android.material.button.MaterialButtonToggleGroup
-                android:id="@+id/overview_segmented_group"
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_close_all_tabs"
+                style="@style/Widget.Material3.Button.TextButton"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                app:singleSelection="true"
-                app:selectionRequired="true">
+                android:layout_height="36dp"
+                android:text="@string/tab_close_all"
+                android:textSize="12sp"
+                android:textColor="?attr/colorError"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                android:visibility="gone" />
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btn_mode_tabs"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="38dp"
-                    app:icon="@drawable/icon_tab"
-                    app:iconSize="16dp"
-                    app:iconPadding="4dp"
-                    android:textSize="12sp"
-                    android:insetTop="0dp"
-                    android:insetBottom="0dp"
-                    android:text="@string/album_title_tab" />
+            <ImageButton
+                android:id="@+id/btn_close_overview"
+                style="@style/Widget.Material3.Button.IconButton"
+                android:layout_width="38dp"
+                android:layout_height="38dp"
+                android:src="@drawable/icon_close"
+                app:tint="?attr/colorOnSurfaceVariant"
+                android:contentDescription="@string/app_cancel"
+                android:background="?attr/selectableItemBackgroundBorderless" />
+        </LinearLayout>
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btn_mode_incognito"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="38dp"
-                    app:icon="@drawable/icon_incognito"
-                    app:iconSize="16dp"
-                    app:iconPadding="4dp"
-                    android:textSize="12sp"
-                    android:insetTop="0dp"
-                    android:insetBottom="0dp"
-                    android:text="@string/incognito_tab" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btn_mode_bookmarks"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="38dp"
-                    app:icon="@drawable/icon_bookmark"
-                    app:iconSize="16dp"
-                    app:iconPadding="4dp"
-                    android:textSize="12sp"
-                    android:insetTop="0dp"
-                    android:insetBottom="0dp"
-                    android:text="@string/album_title_bookmarks" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btn_mode_history"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="38dp"
-                    app:icon="@drawable/icon_history"
-                    app:iconSize="16dp"
-                    app:iconPadding="4dp"
-                    android:textSize="12sp"
-                    android:insetTop="0dp"
-                    android:insetBottom="0dp"
-                    android:text="@string/album_title_history" />
-
-            </com.google.android.material.button.MaterialButtonToggleGroup>
-
-        </HorizontalScrollView>
-
-    </LinearLayout>
+    </RelativeLayout>
 
     <!-- 2-Column Tab Card Grid (RecyclerView) -->
     <androidx.recyclerview.widget.RecyclerView
@@ -151,21 +68,21 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_below="@id/overview_header"
-        android:layout_above="@+id/bottom_navigation"
+        android:layout_above="@+id/overview_bottom_dock"
         android:clipToPadding="false"
         android:paddingStart="8dp"
         android:paddingEnd="8dp"
         android:paddingTop="8dp"
-        android:paddingBottom="75dp"
+        android:paddingBottom="90dp"
         android:visibility="visible" />
 
-    <!-- Empty State View (e.g. When no incognito or normal tabs open) -->
+    <!-- Empty State View (When no tabs or incognito tabs are open) -->
     <LinearLayout
         android:id="@+id/overview_empty_state"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_below="@id/overview_header"
-        android:layout_above="@+id/bottom_navigation"
+        android:layout_above="@+id/overview_bottom_dock"
         android:gravity="center"
         android:orientation="vertical"
         android:padding="32dp"
@@ -216,11 +133,11 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_below="@id/overview_header"
-        android:layout_above="@+id/bottom_navigation"
+        android:layout_above="@+id/overview_bottom_dock"
         android:divider="@null"
         android:fastScrollEnabled="true"
         android:paddingTop="8dp"
-        android:paddingBottom="75dp"
+        android:paddingBottom="90dp"
         android:clipToPadding="false"
         android:visibility="gone" />
 
@@ -232,46 +149,153 @@
         android:orientation="vertical"
         android:visibility="gone" />
 
-    <!-- New Tab FABs above Bottom Navigation -->
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/fab_new_incognito_tab"
-        style="@style/Widget.Material3.Button.IconButton.Filled"
+    <!-- New Tab Action FABs: Docked tightly at bottom right for one-handed right thumb use -->
+    <LinearLayout
+        android:id="@+id/overview_fab_container"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_toStartOf="@+id/fab_new_tab"
-        android:layout_above="@+id/bottom_navigation"
-        android:layout_marginEnd="12dp"
-        android:layout_marginBottom="16dp"
-        android:src="@drawable/icon_incognito"
-        app:fabCustomSize="48dp"
-        app:maxImageSize="24dp"
-        app:elevation="3dp"
-        tools:ignore="ContentDescription" />
-
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/fab_new_tab"
-        style="@style/Widget.Material3.Button.IconButton.Filled"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="end|center_horizontal"
         android:layout_alignParentEnd="true"
-        android:layout_above="@+id/bottom_navigation"
-        android:layout_marginEnd="20dp"
-        android:layout_marginBottom="16dp"
-        android:src="@drawable/icon_add"
-        app:fabCustomSize="48dp"
-        app:maxImageSize="24dp"
-        app:elevation="3dp"
-        tools:ignore="ContentDescription" />
+        android:layout_above="@+id/overview_bottom_dock"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="12dp">
 
-    <!-- Bottom Navigation Bar (Synchronized with Top Mode Switcher) -->
-    <com.google.android.material.bottomnavigation.BottomNavigationView
-        android:id="@+id/bottom_navigation"
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fab_new_incognito_tab"
+            style="@style/Widget.Material3.Button.IconButton.Filled"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="10dp"
+            android:src="@drawable/icon_incognito"
+            app:fabCustomSize="44dp"
+            app:maxImageSize="22dp"
+            app:elevation="4dp"
+            tools:ignore="ContentDescription" />
+
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fab_new_tab"
+            style="@style/Widget.Material3.Button.IconButton.Filled"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/icon_add"
+            app:fabCustomSize="52dp"
+            app:maxImageSize="26dp"
+            app:elevation="6dp"
+            tools:ignore="ContentDescription" />
+
+    </LinearLayout>
+
+    <!-- Bottom Control Dock: Segmented Mode Switcher docked at the bottom for one-handed thumb reach -->
+    <LinearLayout
+        android:id="@+id/overview_bottom_dock"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:orientation="vertical"
         android:layout_alignParentBottom="true"
-        android:layout_marginEnd="15dp"
-        android:layout_marginStart="15dp"
-        app:labelVisibilityMode="selected"
-        app:menu="@menu/menu_bottom_overview"/>
+        android:background="?attr/colorSurfaceContainer"
+        android:elevation="6dp"
+        android:paddingTop="6dp"
+        android:paddingBottom="10dp">
+
+        <HorizontalScrollView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:scrollbars="none"
+            android:fillViewport="false"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <com.google.android.material.button.MaterialButtonToggleGroup
+                    android:id="@+id/overview_segmented_group"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:singleSelection="true"
+                    app:selectionRequired="true">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_mode_tabs"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="38dp"
+                        app:icon="@drawable/icon_tab"
+                        app:iconSize="16dp"
+                        app:iconPadding="4dp"
+                        android:textSize="12sp"
+                        android:insetTop="0dp"
+                        android:insetBottom="0dp"
+                        android:text="@string/album_title_tab" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_mode_incognito"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="38dp"
+                        app:icon="@drawable/icon_incognito"
+                        app:iconSize="16dp"
+                        app:iconPadding="4dp"
+                        android:textSize="12sp"
+                        android:insetTop="0dp"
+                        android:insetBottom="0dp"
+                        android:text="@string/incognito_tab" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_mode_bookmarks"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="38dp"
+                        app:icon="@drawable/icon_bookmark"
+                        app:iconSize="16dp"
+                        app:iconPadding="4dp"
+                        android:textSize="12sp"
+                        android:insetTop="0dp"
+                        android:insetBottom="0dp"
+                        android:text="@string/album_title_bookmarks" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_mode_history"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="38dp"
+                        app:icon="@drawable/icon_history"
+                        app:iconSize="16dp"
+                        app:iconPadding="4dp"
+                        android:textSize="12sp"
+                        android:insetTop="0dp"
+                        android:insetBottom="0dp"
+                        android:text="@string/album_title_history" />
+
+                </com.google.android.material.button.MaterialButtonToggleGroup>
+
+                <ImageButton
+                    android:id="@+id/btn_overview_more"
+                    style="@style/Widget.Material3.Button.IconButton"
+                    android:layout_width="38dp"
+                    android:layout_height="38dp"
+                    android:layout_marginStart="6dp"
+                    android:src="@drawable/icon_overflow"
+                    app:tint="?attr/colorOnSurfaceVariant"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/menu_other" />
+
+            </LinearLayout>
+
+        </HorizontalScrollView>
+
+    </LinearLayout>
+
+    <!-- Legacy hidden navigation for backwards compatibility with existing methods -->
+    <com.google.android.material.bottomnavigation.BottomNavigationView
+        android:id="@+id/bottom_navigation"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:visibility="gone"
+        app:menu="@menu/menu_bottom_overview" />
 
 </RelativeLayout>

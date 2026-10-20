@@ -198,4 +198,5 @@
     <string name="tab_close_all_confirm">Close all open tabs?</string>
     <string name="tab_empty_normal">No open tabs</string>
     <string name="tab_empty_incognito">No open incognito tabs</string>
+    <string name="menu_other">More options</string>
 </resources>

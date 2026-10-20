@@ -220,6 +220,7 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
     private MaterialButton btnModeHistory;
     private TextView overviewTitle;
     private MaterialButton btnCloseAllTabs;
+    private View overviewFabContainer;
 
     private static final int OVERVIEW_MODE_TABS = 0;
     private static final int OVERVIEW_MODE_INCOGNITO = 1;
@@ -468,10 +469,72 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
         btnModeHistory = dialogViewOverview.findViewById(R.id.btn_mode_history);
         overviewTitle = dialogViewOverview.findViewById(R.id.overview_title);
         btnCloseAllTabs = dialogViewOverview.findViewById(R.id.btn_close_all_tabs);
+        overviewFabContainer = dialogViewOverview.findViewById(R.id.overview_fab_container);
 
         ImageButton btnCloseOverview = dialogViewOverview.findViewById(R.id.btn_close_overview);
         if (btnCloseOverview != null) {
             btnCloseOverview.setOnClickListener(v -> hideOverview());
+        }
+
+        ImageButton btnOverviewMore = dialogViewOverview.findViewById(R.id.btn_overview_more);
+        if (btnOverviewMore != null) {
+            btnOverviewMore.setOnClickListener(v -> {
+                PopupMenu popup = new PopupMenu(this, btnOverviewMore);
+                popup.setForceShowIcon(true);
+                if (currentOverviewMode == OVERVIEW_MODE_BOOKMARKS) {
+                    popup.inflate(R.menu.menu_list_bookmark);
+                } else if (currentOverviewMode == OVERVIEW_MODE_HISTORY) {
+                    popup.inflate(R.menu.menu_list_history);
+                } else if (currentOverviewMode == OVERVIEW_MODE_INCOGNITO) {
+                    popup.getMenu().add(0, 101, 0, R.string.incognito_closed_all).setIcon(R.drawable.icon_incognito);
+                } else {
+                    popup.getMenu().add(0, 102, 0, R.string.tab_close_all).setIcon(R.drawable.icon_tab);
+                }
+                popup.setOnMenuItemClickListener(item -> {
+                    if (item.getItemId() == 101) {
+                        if (BrowserContainer.hasIncognito()) {
+                            closeAllIncognitoTabs();
+                        }
+                    } else if (item.getItemId() == 102) {
+                        confirmCloseAllNormalTabs();
+                    } else if (item.getItemId() == R.id.menu_delete) {
+                        Snackbar snackbarBottom = Snackbar.make(dialogViewOverview, R.string.hint_database, Snackbar.LENGTH_SHORT);
+                        HelperUnit.makeSnackbarRound(snackbarBottom);
+                        snackbarBottom.setAction(context.getString(R.string.app_ok), (v2 -> {
+                            if (overViewTab.equals(getString(R.string.album_title_bookmarks))) {
+                                BrowserUnit.clearBookmark(context);
+                                updateOverviewContent();
+                            } else if (overViewTab.equals(getString(R.string.album_title_history))) {
+                                BrowserUnit.clearHistory(context);
+                                updateOverviewContent();
+                            }
+                        }));
+                        snackbarBottom.show();
+                    } else if (item.getItemId() == R.id.menu_sortName) {
+                        sp.edit().putString("sort_bookmark", "title").apply();
+                        sp.edit().putBoolean("sort_bookmarkDomain", false).apply();
+                        updateOverviewContent();
+                    } else if (item.getItemId() == R.id.menu_sortIcon) {
+                        sp.edit().putString("sort_bookmark", "time").apply();
+                        sp.edit().putBoolean("sort_bookmarkDomain", false).apply();
+                        updateOverviewContent();
+                    } else if (item.getItemId() == R.id.menu_sortDate) {
+                        sp.edit().putBoolean("sort_historyDomain", false).apply();
+                        updateOverviewContent();
+                    } else if (item.getItemId() == R.id.menu_sortDomain) {
+                        if (overViewTab.equals(getString(R.string.album_title_bookmarks))) {
+                            sp.edit().putBoolean("sort_bookmarkDomain", true).apply();
+                        } else if (overViewTab.equals(getString(R.string.album_title_history))) {
+                            sp.edit().putBoolean("sort_historyDomain", true).apply();
+                        }
+                        updateOverviewContent();
+                    } else if (item.getItemId() == R.id.menu_filter) {
+                        showDialogFilter();
+                    }
+                    return true;
+                });
+                popup.show();
+            });
         }
 
         if (overviewSegmentedGroup != null) {
@@ -725,7 +788,6 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
                 if (controller == currentAlbumController) predecessor = ((NinjaWebView) controller).getPredecessor();
                 else predecessor = currentAlbumController;
                 //if not the current TAB is being closed return to current TAB
-                tab_container.removeView(controller.getAlbumView());
                 int index = BrowserContainer.indexOf(controller);
                 BrowserContainer.remove(controller);
                 if ((predecessor != null) && (BrowserContainer.indexOf(predecessor) != -1)) {
@@ -735,6 +797,7 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
                     if (index >= BrowserContainer.size()) index = BrowserContainer.size() - 1;
                     showAlbum(BrowserContainer.get(index));
                 }
+                updateOverviewContent();
             });
         }
         updateOmniBox();
@@ -870,7 +933,6 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
     @SuppressLint("ClickableViewAccessibility")
     private void initOverview() {
         listView = dialogOverview.findViewById(R.id.list_overView);
-        AtomicInteger intPage = new AtomicInteger();
 
         TypedValue typedValue = new TypedValue();
         context.getTheme().resolveAttribute(com.google.android.material.R.attr.colorPrimaryInverse, typedValue, true);
@@ -889,87 +951,13 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
         }
 
         NavigationBarView.OnItemSelectedListener navListener = menuItem -> {
-
             if (menuItem.getItemId() == R.id.page_0) {
-                fab_overview.setImageResource(R.drawable.icon_tab);
-                overViewTab = getString(R.string.album_title_tab);
-                intPage.set(R.id.page_0);
-                listView.setVisibility(GONE);
-                tab_container.setVisibility(VISIBLE);
-                if (fab_new_tab != null) fab_new_tab.setVisibility(VISIBLE);
-                if (fab_new_incognito_tab != null) fab_new_incognito_tab.setVisibility(VISIBLE);
-            }
-
-            else if (menuItem.getItemId() == R.id.page_2) {
-                if (fab_new_tab != null) fab_new_tab.setVisibility(GONE);
-                if (fab_new_incognito_tab != null) fab_new_incognito_tab.setVisibility(GONE);
-                try {
-                    RecordAction action = new RecordAction(context);
-                    action.open(true);
-                    if (action.checkUrl(ninjaWebView.getUrl(), RecordUnit.TABLE_BOOKMARK)) {
-                        fab_overview.setImageResource(R.drawable.icon_bookmark_added);
-                    } else {
-                        fab_overview.setImageResource(R.drawable.icon_bookmark);
-                    }
-                    action.close();
-                } catch (Exception e) {Log.i(TAG, "dialogCustomSearches:" + e);}
-                overViewTab = getString(R.string.album_title_bookmarks);
-                intPage.set(R.id.page_2);
-                listView.setVisibility(VISIBLE);
-                tab_container.setVisibility(GONE);
-
-                RecordAction action = new RecordAction(context);
-                action.open(false);
-                final List<Record> list;
-                list = action.listBookmark(activity, filter, filterBy);
-                action.close();
-                adapter = new AdapterRecord(context, list);
-                listView.setAdapter(adapter);
-                adapter.notifyDataSetChanged();
-                filter = false;
-                listView.setOnItemClickListener((parent, view, position, id) -> {
-                    ninjaWebView.loadUrl(list.get(position).getURL());
-                    hideOverview();
-                });
-                listView.setOnItemLongClickListener((parent, view, position, id) -> {
-                    showOverflow(dialogOverview,  listView, 3, list.get(position).getTitle(), list.get(position).getURL(), adapter, list, position);
-                    return true;
-                }); }
-            else if (menuItem.getItemId() == R.id.page_3) {
-                if (fab_new_tab != null) fab_new_tab.setVisibility(GONE);
-                if (fab_new_incognito_tab != null) fab_new_incognito_tab.setVisibility(GONE);
-                fab_overview.setImageResource(R.drawable.icon_history);
-                overViewTab = getString(R.string.album_title_history);
-                intPage.set(R.id.page_3);
-                listView.setVisibility(VISIBLE);
-                tab_container.setVisibility(GONE);
-
-                RecordAction action = new RecordAction(context);
-                action.open(false);
-                final List<Record> list;
-                list = action.listHistory(context);
-                action.close();
-                //noinspection NullableProblems
-                adapter = new AdapterRecord(context, list) {
-                    @Override
-                    public View getView(int position, View convertView, @NonNull ViewGroup parent) {
-                        View v = super.getView(position, convertView, parent);
-                        TextView record_item_time = v.findViewById(R.id.dateView);
-                        record_item_time.setVisibility(VISIBLE);
-                        return v;
-                    }
-                };
-                listView.setAdapter(adapter);
-                adapter.notifyDataSetChanged();
-                listView.setOnItemClickListener((parent, view, position, id) -> {
-                    ninjaWebView.loadUrl(list.get(position).getURL());
-                    hideOverview();
-                });
-                listView.setOnItemLongClickListener((parent, view, position, id) -> {
-                    showOverflow(dialogOverview, listView, 4, list.get(position).getTitle(), list.get(position).getURL(), adapter, list, position);
-                    return true;
-                }); }
-            else if (menuItem.getItemId() == R.id.page_4) {
+                setOverviewMode(currentOverviewMode == OVERVIEW_MODE_INCOGNITO ? OVERVIEW_MODE_INCOGNITO : OVERVIEW_MODE_TABS);
+            } else if (menuItem.getItemId() == R.id.page_2) {
+                setOverviewMode(OVERVIEW_MODE_BOOKMARKS);
+            } else if (menuItem.getItemId() == R.id.page_3) {
+                setOverviewMode(OVERVIEW_MODE_HISTORY);
+            } else if (menuItem.getItemId() == R.id.page_4) {
                 PopupMenu popup = new PopupMenu(this, bottom_navigation.findViewById(R.id.page_2));
                 popup.setForceShowIcon(true);
                 popup.setOnDismissListener(menu -> setSelectedTab());
@@ -1017,7 +1005,6 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
                 });
                 popup.show();
             }
-
             return true;
         };
         bottom_navigation.setOnItemSelectedListener(navListener);
@@ -1025,7 +1012,281 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
             showDialogFilter();
             return true;
         });
-        setSelectedTab();
+
+        int initialMode = OVERVIEW_MODE_TABS;
+        if (overViewTab.equals(getString(R.string.album_title_bookmarks))) {
+            initialMode = OVERVIEW_MODE_BOOKMARKS;
+        } else if (overViewTab.equals(getString(R.string.album_title_history))) {
+            initialMode = OVERVIEW_MODE_HISTORY;
+        } else if (ninjaWebView != null && ninjaWebView.isIncognito()) {
+            initialMode = OVERVIEW_MODE_INCOGNITO;
+        }
+        setOverviewMode(initialMode);
+    }
+
+    private void setOverviewMode(int mode) {
+        currentOverviewMode = mode;
+
+        int buttonId = R.id.btn_mode_tabs;
+        if (mode == OVERVIEW_MODE_INCOGNITO) buttonId = R.id.btn_mode_incognito;
+        else if (mode == OVERVIEW_MODE_BOOKMARKS) buttonId = R.id.btn_mode_bookmarks;
+        else if (mode == OVERVIEW_MODE_HISTORY) buttonId = R.id.btn_mode_history;
+
+        if (overviewSegmentedGroup != null && overviewSegmentedGroup.getCheckedButtonId() != buttonId) {
+            overviewSegmentedGroup.check(buttonId);
+        }
+
+        if (bottom_navigation != null) {
+            int navId = R.id.page_0;
+            if (mode == OVERVIEW_MODE_BOOKMARKS) navId = R.id.page_2;
+            else if (mode == OVERVIEW_MODE_HISTORY) navId = R.id.page_3;
+            if (bottom_navigation.getSelectedItemId() != navId) {
+                bottom_navigation.setSelectedItemId(navId);
+            }
+        }
+
+        updateOverviewContent();
+    }
+
+    private void updateOverviewSegmentedBadges() {
+        if (btnModeTabs != null) {
+            int countNormal = BrowserContainer.countNormal();
+            btnModeTabs.setText(getString(R.string.album_title_tab) + " (" + countNormal + ")");
+        }
+        if (btnModeIncognito != null) {
+            int countIncognito = BrowserContainer.countIncognito();
+            if (countIncognito > 0) {
+                btnModeIncognito.setText(getString(R.string.incognito_tab) + " (" + countIncognito + ")");
+            } else {
+                btnModeIncognito.setText(R.string.incognito_tab);
+            }
+        }
+        if (bottom_navigation != null && BrowserContainer.size() > 0) {
+            bottom_navigation.getOrCreateBadge(R.id.page_0).setNumber(BrowserContainer.size());
+        }
+    }
+
+    private void updateOverviewContent() {
+        updateOverviewSegmentedBadges();
+
+        if (currentOverviewMode == OVERVIEW_MODE_TABS) {
+            if (overviewTitle != null) overviewTitle.setText(R.string.album_title_tab);
+            fab_overview.setImageResource(R.drawable.icon_tab);
+            overViewTab = getString(R.string.album_title_tab);
+            if (listView != null) listView.setVisibility(GONE);
+            if (overviewFabContainer != null) overviewFabContainer.setVisibility(VISIBLE);
+            if (fab_new_tab != null) fab_new_tab.setVisibility(VISIBLE);
+            if (fab_new_incognito_tab != null) fab_new_incognito_tab.setVisibility(VISIBLE);
+
+            List<AlbumController> normalTabs = BrowserContainer.listNormal();
+            if (normalTabs.isEmpty() && BrowserContainer.size() > 0) {
+                normalTabs = BrowserContainer.list();
+            }
+
+            if (normalTabs.isEmpty()) {
+                if (tabRecyclerView != null) tabRecyclerView.setVisibility(GONE);
+                if (overviewEmptyState != null) {
+                    overviewEmptyState.setVisibility(VISIBLE);
+                    emptyStateIcon.setImageResource(R.drawable.icon_tab);
+                    emptyStateTitle.setText(R.string.tab_empty_normal);
+                    emptyStateSubtitle.setText(R.string.main_omnibox_input_hint);
+                    emptyStateAction.setText(R.string.main_menu_new_tabOpen);
+                    emptyStateAction.setIconResource(R.drawable.icon_add);
+                    emptyStateAction.setOnClickListener(v -> {
+                        addAlbum(getString(R.string.home), BrowserUnit.URL_HOME, true);
+                        hideOverview();
+                    });
+                }
+                if (btnCloseAllTabs != null) btnCloseAllTabs.setVisibility(GONE);
+            } else {
+                if (overviewEmptyState != null) overviewEmptyState.setVisibility(GONE);
+                if (tabRecyclerView != null) tabRecyclerView.setVisibility(VISIBLE);
+                if (tabGridAdapter != null) tabGridAdapter.setTabs(normalTabs, currentAlbumController);
+                if (btnCloseAllTabs != null) {
+                    btnCloseAllTabs.setVisibility(normalTabs.size() > 1 ? VISIBLE : GONE);
+                    btnCloseAllTabs.setText(R.string.tab_close_all);
+                    btnCloseAllTabs.setOnClickListener(v -> confirmCloseAllNormalTabs());
+                }
+            }
+        } else if (currentOverviewMode == OVERVIEW_MODE_INCOGNITO) {
+            if (overviewTitle != null) overviewTitle.setText(R.string.incognito_tab);
+            fab_overview.setImageResource(R.drawable.icon_incognito);
+            overViewTab = getString(R.string.incognito_tab);
+            if (listView != null) listView.setVisibility(GONE);
+            if (overviewFabContainer != null) overviewFabContainer.setVisibility(VISIBLE);
+            if (fab_new_tab != null) fab_new_tab.setVisibility(GONE);
+            if (fab_new_incognito_tab != null) fab_new_incognito_tab.setVisibility(VISIBLE);
+
+            List<AlbumController> incognitoTabs = BrowserContainer.listIncognito();
+            if (incognitoTabs.isEmpty()) {
+                if (tabRecyclerView != null) tabRecyclerView.setVisibility(GONE);
+                if (overviewEmptyState != null) {
+                    overviewEmptyState.setVisibility(VISIBLE);
+                    emptyStateIcon.setImageResource(R.drawable.icon_incognito);
+                    emptyStateTitle.setText(R.string.tab_empty_incognito);
+                    emptyStateSubtitle.setText(R.string.incognito_home_desc);
+                    emptyStateAction.setText(R.string.main_menu_new_tab_incognito);
+                    emptyStateAction.setIconResource(R.drawable.icon_add);
+                    emptyStateAction.setOnClickListener(v -> {
+                        openIncognitoTab(BrowserUnit.URL_HOME);
+                        hideOverview();
+                    });
+                }
+                if (btnCloseAllTabs != null) btnCloseAllTabs.setVisibility(GONE);
+            } else {
+                if (overviewEmptyState != null) overviewEmptyState.setVisibility(GONE);
+                if (tabRecyclerView != null) tabRecyclerView.setVisibility(VISIBLE);
+                if (tabGridAdapter != null) tabGridAdapter.setTabs(incognitoTabs, currentAlbumController);
+                if (btnCloseAllTabs != null) {
+                    btnCloseAllTabs.setVisibility(VISIBLE);
+                    btnCloseAllTabs.setText(R.string.incognito_close_all);
+                    btnCloseAllTabs.setOnClickListener(v -> closeAllIncognitoTabs());
+                }
+            }
+        } else if (currentOverviewMode == OVERVIEW_MODE_BOOKMARKS) {
+            if (overviewTitle != null) overviewTitle.setText(R.string.album_title_bookmarks);
+            if (tabRecyclerView != null) tabRecyclerView.setVisibility(GONE);
+            if (overviewEmptyState != null) overviewEmptyState.setVisibility(GONE);
+            if (listView != null) listView.setVisibility(VISIBLE);
+            if (overviewFabContainer != null) overviewFabContainer.setVisibility(GONE);
+            if (fab_new_tab != null) fab_new_tab.setVisibility(GONE);
+            if (fab_new_incognito_tab != null) fab_new_incognito_tab.setVisibility(GONE);
+            if (btnCloseAllTabs != null) btnCloseAllTabs.setVisibility(GONE);
+
+            try {
+                RecordAction action = new RecordAction(context);
+                action.open(true);
+                if (ninjaWebView != null && action.checkUrl(ninjaWebView.getUrl(), RecordUnit.TABLE_BOOKMARK)) {
+                    fab_overview.setImageResource(R.drawable.icon_bookmark_added);
+                } else {
+                    fab_overview.setImageResource(R.drawable.icon_bookmark);
+                }
+                action.close();
+            } catch (Exception e) { Log.i(TAG, "dialogCustomSearches:" + e); }
+            overViewTab = getString(R.string.album_title_bookmarks);
+
+            RecordAction action = new RecordAction(context);
+            action.open(false);
+            final List<Record> list = action.listBookmark(activity, filter, filterBy);
+            action.close();
+            adapter = new AdapterRecord(context, list);
+            listView.setAdapter(adapter);
+            adapter.notifyDataSetChanged();
+            filter = false;
+            listView.setOnItemClickListener((parent, view, position, id) -> {
+                ninjaWebView.loadUrl(list.get(position).getURL());
+                hideOverview();
+            });
+            listView.setOnItemLongClickListener((parent, view, position, id) -> {
+                showOverflow(dialogOverview, listView, 3, list.get(position).getTitle(), list.get(position).getURL(), adapter, list, position);
+                return true;
+            });
+        } else if (currentOverviewMode == OVERVIEW_MODE_HISTORY) {
+            if (overviewTitle != null) overviewTitle.setText(R.string.album_title_history);
+            fab_overview.setImageResource(R.drawable.icon_history);
+            overViewTab = getString(R.string.album_title_history);
+            if (tabRecyclerView != null) tabRecyclerView.setVisibility(GONE);
+            if (overviewEmptyState != null) overviewEmptyState.setVisibility(GONE);
+            if (listView != null) listView.setVisibility(VISIBLE);
+            if (overviewFabContainer != null) overviewFabContainer.setVisibility(GONE);
+            if (fab_new_tab != null) fab_new_tab.setVisibility(GONE);
+            if (fab_new_incognito_tab != null) fab_new_tab.setVisibility(GONE);
+            if (btnCloseAllTabs != null) btnCloseAllTabs.setVisibility(GONE);
+
+            RecordAction action = new RecordAction(context);
+            action.open(false);
+            final List<Record> list = action.listHistory(context);
+            action.close();
+            adapter = new AdapterRecord(context, list) {
+                @Override
+                public View getView(int position, View convertView, @NonNull ViewGroup parent) {
+                    View v = super.getView(position, convertView, parent);
+                    TextView record_item_time = v.findViewById(R.id.dateView);
+                    record_item_time.setVisibility(VISIBLE);
+                    return v;
+                }
+            };
+            listView.setAdapter(adapter);
+            adapter.notifyDataSetChanged();
+            listView.setOnItemClickListener((parent, view, position, id) -> {
+                ninjaWebView.loadUrl(list.get(position).getURL());
+                hideOverview();
+            });
+            listView.setOnItemLongClickListener((parent, view, position, id) -> {
+                showOverflow(dialogOverview, listView, 4, list.get(position).getTitle(), list.get(position).getURL(), adapter, list, position);
+                return true;
+            });
+        }
+    }
+
+    private void handleTabDismissWithUndo(AlbumController controller, int adapterPosition) {
+        if (controller == null) return;
+        if (BrowserContainer.size() <= 1) {
+            if (tabGridAdapter != null) tabGridAdapter.notifyItemChanged(adapterPosition);
+            NinjaToast.show(this, R.string.toast_quit_TAB);
+            return;
+        }
+
+        int originalIndex = BrowserContainer.indexOf(controller);
+        boolean wasCurrent = (controller == currentAlbumController);
+
+        BrowserContainer.remove(controller);
+
+        if (wasCurrent) {
+            int nextIndex = Math.min(originalIndex, BrowserContainer.size() - 1);
+            showAlbum(BrowserContainer.get(nextIndex));
+        }
+
+        updateOverviewContent();
+        updateOmniBox();
+
+        View anchor = dialogViewOverview != null ? dialogViewOverview : findViewById(android.R.id.content);
+        Snackbar snackbar = Snackbar.make(anchor, R.string.tab_closed, Snackbar.LENGTH_LONG);
+        HelperUnit.makeSnackbarRound(snackbar);
+        snackbar.setAction(R.string.app_undo, v -> {
+            BrowserContainer.add(controller, originalIndex);
+            if (wasCurrent) {
+                showAlbum(controller);
+            }
+            updateOverviewContent();
+            updateOmniBox();
+        });
+        snackbar.addCallback(new Snackbar.Callback() {
+            @Override
+            public void onDismissed(Snackbar transientBottomBar, int event) {
+                if (event != DISMISS_EVENT_ACTION) {
+                    if (controller instanceof NinjaWebView) {
+                        ((NinjaWebView) controller).destroy();
+                    }
+                }
+            }
+        });
+        snackbar.show();
+    }
+
+    private void confirmCloseAllNormalTabs() {
+        new MaterialAlertDialogBuilder(context)
+                .setTitle(R.string.tab_close_all)
+                .setMessage(R.string.tab_close_all_confirm)
+                .setIcon(R.drawable.icon_tab)
+                .setPositiveButton(R.string.app_ok, (dialog, which) -> {
+                    List<AlbumController> normalTabs = BrowserContainer.listNormal();
+                    for (AlbumController c : normalTabs) {
+                        BrowserContainer.remove(c);
+                        if (c instanceof NinjaWebView) {
+                            ((NinjaWebView) c).destroy();
+                        }
+                    }
+                    if (BrowserContainer.size() < 1) {
+                        addAlbum(getString(R.string.home), BrowserUnit.URL_HOME, true);
+                    } else {
+                        showAlbum(BrowserContainer.get(0));
+                    }
+                    updateOverviewContent();
+                    updateOmniBox();
+                })
+                .setNegativeButton(R.string.app_cancel, null)
+                .show();
     }
 
     @SuppressLint({"ClickableViewAccessibility", "UnsafeOptInUsageError"})
@@ -1354,8 +1615,14 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
     }
 
     private void showOverview() {
+        if (ninjaWebView != null) {
+            ninjaWebView.captureThumbnail();
+        }
         initOverview();
         dialogOverview.show();
+        if (dialogOverview.getWindow() != null) {
+            dialogOverview.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
+        }
     }
 
     public void hideSearch() {
@@ -1398,10 +1665,10 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
             }
         }
         for (AlbumController controller : toRemove) {
-            if (controller.getAlbumView() != null && tab_container != null) {
-                tab_container.removeView(controller.getAlbumView());
-            }
             BrowserContainer.remove(controller);
+            if (controller instanceof NinjaWebView) {
+                ((NinjaWebView) controller).destroy();
+            }
         }
         if (BrowserContainer.size() < 1) {
             addAlbum(getString(R.string.home), BrowserUnit.URL_HOME, true);
@@ -1413,12 +1680,19 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
         }
         NinjaToast.show(this, R.string.incognito_closed_all);
         updateOmniBox();
+        updateOverviewContent();
     }
 
     private void setSelectedTab() {
-        if (overViewTab.equals(getString(R.string.album_title_tab))) bottom_navigation.setSelectedItemId(R.id.page_0);
-        else if (overViewTab.equals(getString(R.string.album_title_bookmarks))) bottom_navigation.setSelectedItemId(R.id.page_2);
-        else if (overViewTab.equals(getString(R.string.album_title_history))) bottom_navigation.setSelectedItemId(R.id.page_3);
+        if (overViewTab.equals(getString(R.string.album_title_tab))) {
+            setOverviewMode(OVERVIEW_MODE_TABS);
+        } else if (overViewTab.equals(getString(R.string.album_title_bookmarks))) {
+            setOverviewMode(OVERVIEW_MODE_BOOKMARKS);
+        } else if (overViewTab.equals(getString(R.string.album_title_history))) {
+            setOverviewMode(OVERVIEW_MODE_HISTORY);
+        } else if (overViewTab.equals(getString(R.string.incognito_tab))) {
+            setOverviewMode(OVERVIEW_MODE_INCOGNITO);
+        }
     }
 
     public void hideOverflow () {
@@ -3208,13 +3482,7 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
             dialogOverview.cancel();
             showAlbum(ninjaWebView);
         }
-        View albumView = ninjaWebView.getAlbumView();
-        if (albumView != null) {
-            if (albumView.getParent() != null) {
-                ((ViewGroup) albumView.getParent()).removeView(albumView);
-            }
-            tab_container.addView(albumView, WRAP_CONTENT, WRAP_CONTENT);
-        }
+        updateOverviewContent();
 
         if (url.isEmpty()) ninjaWebView.loadUrl("about:blank");
         else ninjaWebView.loadUrl(url);
