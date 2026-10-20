@@ -10,19 +10,20 @@
             "console": "internalConsole"
         },
         {
-            "name": "Debug with Android Extension (Requires Window Reload)",
+            "name": "Debug App on Physical Device (Android)",
             "type": "android",
             "request": "launch",
-            "target": "R9ZX205NJAK",
+            "targetDevice": "R9ZX205NJAK",
+            "launchActivity": "de.baumann.browser.feature.browser.BrowserActivity",
             "appSrcRoot": "${workspaceFolder}/app/src/main",
             "apkFile": "${workspaceFolder}/app/build/outputs/apk/debug/app-debug.apk",
             "preLaunchTask": "Assemble Debug APK"
         },
         {
-            "name": "Attach Debugger (Physical Device)",
+            "name": "Attach Debugger to Running App (Android)",
             "type": "android",
             "request": "attach",
-            "target": "R9ZX205NJAK",
+            "targetDevice": "R9ZX205NJAK",
             "processId": "de.baumann.browser"
         }
     ]
