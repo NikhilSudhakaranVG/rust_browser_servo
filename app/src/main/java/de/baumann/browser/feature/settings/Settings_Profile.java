@@ -33,18 +33,8 @@ public class Settings_Profile extends AppCompatActivity {
     }
 
     @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.menu_help, menu);
-        return super.onCreateOptionsMenu(menu);
-    }
-
-    @Override
     public boolean onOptionsItemSelected(MenuItem menuItem) {
         if (menuItem.getItemId() == android.R.id.home) finish();
-        if (menuItem.getItemId() == R.id.menu_help) {
-            Uri webpage = Uri.parse("https://codeberg.org/Gaukler_Faun/FOSS_Browser/wiki/Edit-standard-profile");
-            BrowserUnit.intentURL(this, webpage);
-        }
         return true;
     }
 }

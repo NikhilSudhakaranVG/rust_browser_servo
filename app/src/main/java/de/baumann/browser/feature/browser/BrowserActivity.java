@@ -407,6 +407,16 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
         initOverview();
         hideSearch();
 
+        if (sp.getString("favoriteURL", "").contains("codeberg.org")) {
+            sp.edit().putString("favoriteURL", BrowserUnit.URL_HOME).apply();
+        }
+        try {
+            RecordAction cleanCodebergAction = new RecordAction(context);
+            cleanCodebergAction.open(true);
+            cleanCodebergAction.deleteURL("https://codeberg.org/Gaukler_Faun/FOSS_Browser/wiki", RecordUnit.TABLE_BOOKMARK);
+            cleanCodebergAction.close();
+        } catch (Exception ignored) {}
+
         //restore open Tabs from shared preferences if app got killed
         if (sp.getBoolean("sp_restoreTabs", false)
                 || sp.getBoolean("sp_reloadTabs", false)
@@ -534,7 +544,7 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
             if (!sp.getBoolean("sp_reopenLastTab", false)) {
                 doubleTapsQuit();
             } else {
-                ninjaWebView.loadUrl(Objects.requireNonNull(sp.getString("favoriteURL", "https://codeberg.org/Gaukler_Faun/FOSS_Browser/wiki")));
+                ninjaWebView.loadUrl(Objects.requireNonNull(sp.getString("favoriteURL", BrowserUnit.URL_HOME)));
             }
         } else {
             closeTabConfirmation(() -> {
@@ -783,9 +793,7 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
                 PopupMenu popup = new PopupMenu(this, bottom_navigation.findViewById(R.id.page_2));
                 popup.setForceShowIcon(true);
                 popup.setOnDismissListener(menu -> setSelectedTab());
-                if (bottom_navigation.getSelectedItemId() == R.id.page_0)
-                    popup.inflate(R.menu.menu_help);
-                else if (bottom_navigation.getSelectedItemId() == R.id.page_2)
+                if (bottom_navigation.getSelectedItemId() == R.id.page_2)
                     popup.inflate(R.menu.menu_list_bookmark);
                 else if (bottom_navigation.getSelectedItemId() == R.id.page_3)
                     popup.inflate(R.menu.menu_list_history);
@@ -824,9 +832,7 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
                         }
                     } else if (item.getItemId() == R.id.menu_filter) {
                         showDialogFilter();
-                    } else if (item.getItemId() == R.id.menu_help) {
-                        Uri webpage = Uri.parse("https://codeberg.org/Gaukler_Faun/FOSS_Browser/wiki/Overview");
-                        BrowserUnit.intentURL(this, webpage); }
+                    }
                     return true;
                 });
                 popup.show();
@@ -1326,7 +1332,7 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
         @SuppressLint("NonConstantResourceId")
         AdapterMenu adapter = new AdapterMenu(selectedItemsList, item -> {
 
-            String favURL = Objects.requireNonNull(sp.getString("favoriteURL", "https://codeberg.org/Gaukler_Faun/FOSS_Browser/wiki"));
+            String favURL = Objects.requireNonNull(sp.getString("favoriteURL", BrowserUnit.URL_HOME));
             RecordAction action = new RecordAction(context);
 
             dialog_overflow.cancel();
@@ -1387,8 +1393,7 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
             } else if (resId == R.drawable.icon_restart) {
                 triggerRebirth(context);
             } else if (resId == R.drawable.icon_help) {
-                Uri webpage = Uri.parse("https://codeberg.org/Gaukler_Faun/FOSS_Browser/wiki/Home");
-                BrowserUnit.intentURL(this, webpage);
+                ninjaWebView.loadUrl(BrowserUnit.URL_HOME);
             } else if (resId == R.drawable.icon_delete) {
                 Snackbar snackbarSearch = Snackbar.make(view, R.string.hint_database, Snackbar.LENGTH_SHORT);
                 HelperUnit.makeSnackbarRound(snackbarSearch);
@@ -2036,12 +2041,6 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
                 }
             });
 
-            Button button_help = dialogViewFastToggle.findViewById(R.id.button_help);
-            button_help.setOnClickListener(view -> {
-                dialogFastToggle.cancel();
-                Uri webpage = Uri.parse("https://codeberg.org/Gaukler_Faun/FOSS_Browser/wiki/Settings-Dialog.-");
-                BrowserUnit.intentURL(this, webpage);
-            });
             dialogFastToggle.setOnDismissListener(dialogInterface -> setProfileIcon(floatingActionButton,url));
             dialogFastToggle.show();
 
@@ -2456,7 +2455,7 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
                 showOverview();
                 break;
             case "09":
-                addAlbum(getString(R.string.app_name), Objects.requireNonNull(sp.getString("favoriteURL", "https://codeberg.org/Gaukler_Faun/FOSS_Browser/wiki")), true);
+                addAlbum(getString(R.string.home), Objects.requireNonNull(sp.getString("favoriteURL", BrowserUnit.URL_HOME)), true);
                 break;
             case "10":
                 removeAlbum(currentAlbumController);
@@ -2479,7 +2478,7 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
                 ninjaWebView.reload();
                 break;
             case "17":
-                ninjaWebView.loadUrl(Objects.requireNonNull(sp.getString("favoriteURL", "https://codeberg.org/Gaukler_Faun/FOSS_Browser/wiki")));
+                ninjaWebView.loadUrl(Objects.requireNonNull(sp.getString("favoriteURL", BrowserUnit.URL_HOME)));
                 break;
             case "18":
                 bottom_navigation.setSelectedItemId(R.id.page_2);
@@ -2521,7 +2520,7 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
                 showOverview();
                 break;
             case "32":
-                ninjaWebView.loadUrl(sp.getString("favoriteURL", "https://codeberg.org/Gaukler_Faun/FOSS_Browser/wiki"));
+                ninjaWebView.loadUrl(sp.getString("favoriteURL", BrowserUnit.URL_HOME));
                 break;
         }
     }
@@ -2686,14 +2685,14 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
             sp.edit().putBoolean("show_overview", false).apply();
             getIntent().setAction("");
             if (BrowserContainer.size() < 1) {
-                addAlbum(getString(R.string.app_name), sp.getString("favoriteURL", "https://codeberg.org/Gaukler_Faun/FOSS_Browser/wiki"), true);
+                addAlbum(getString(R.string.home), sp.getString("favoriteURL", BrowserUnit.URL_HOME), true);
             }
             postLink(url, null);
         } else if ("customSearches".equals(action)) {
             sp.edit().putBoolean("show_overview", false).apply();
             getIntent().setAction("");
             if (BrowserContainer.size() < 1) {
-                addAlbum(getString(R.string.app_name), sp.getString("favoriteURL", "https://codeberg.org/Gaukler_Faun/FOSS_Browser/wiki"), true);
+                addAlbum(getString(R.string.home), sp.getString("favoriteURL", BrowserUnit.URL_HOME), true);
             }
             showDialogCustomSearches(url);
         } else if (intent.getAction() != null && intent.getAction().equals(Intent.ACTION_PROCESS_TEXT)) {

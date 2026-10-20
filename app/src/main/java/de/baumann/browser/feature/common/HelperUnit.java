@@ -350,7 +350,6 @@ public class HelperUnit {
             list.add(new MenuItem(context.getString(R.string.menu_edit), R.drawable.icon_edit, true));
             list.add(new MenuItem(context.getString(R.string.menu_delete), R.drawable.icon_delete, true));
             list.add(new MenuItem(context.getString(R.string.menu_delete_entry), R.drawable.icon_delete_alt, true));
-            list.add(new MenuItem(context.getString(R.string.app_help), R.drawable.icon_help, true));
 
             try {
                 org.json.JSONArray jsonArray = new org.json.JSONArray();

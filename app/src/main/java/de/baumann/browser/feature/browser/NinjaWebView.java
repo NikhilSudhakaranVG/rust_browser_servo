@@ -676,11 +676,6 @@ public class NinjaWebView extends FrameLayout implements AlbumController {
     // ── Profile helpers ───────────────────────────────────────────────────
 
     public void setProfileDefaultValues() {
-        RecordAction action = new RecordAction(context);
-        action.open(true);
-        action.addBookmark(new Record("FOSS Browser - WIKI",
-                "https://codeberg.org/Gaukler_Faun/FOSS_Browser/wiki", 0, 0));
-        action.close();
 
         sp.edit()
                 .putBoolean("profileStandard_saveData", true)
