@@ -190,4 +190,12 @@
     <string name="incognito_close_all">Close all incognito tabs</string>
     <string name="incognito_close_all_confirm">Close all open incognito tabs?</string>
     <string name="incognito_closed_all">All incognito tabs closed</string>
+
+    <!-- Tab Overview Grid & Switcher -->
+    <string name="app_undo">Undo</string>
+    <string name="tab_closed">Tab closed</string>
+    <string name="tab_close_all">Close all</string>
+    <string name="tab_close_all_confirm">Close all open tabs?</string>
+    <string name="tab_empty_normal">No open tabs</string>
+    <string name="tab_empty_incognito">No open incognito tabs</string>
 </resources>

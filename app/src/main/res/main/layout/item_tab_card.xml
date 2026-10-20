@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/tab_card"
+    style="@style/Widget.Material3.CardView.Filled"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="5dp"
+    android:clickable="true"
+    android:focusable="true"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="2dp"
+    app:strokeWidth="1dp"
+    app:strokeColor="?attr/colorOutlineVariant"
+    android:backgroundTint="?attr/colorSurfaceContainer">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <!-- Card Header: Favicon, Title, Touch-target Close Button -->
+        <LinearLayout
+            android:id="@+id/tab_card_header"
+            android:layout_width="match_parent"
+            android:layout_height="44dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingStart="10dp"
+            android:paddingEnd="4dp"
+            android:background="?attr/colorSurfaceContainerHigh">
+
+            <ImageView
+                android:id="@+id/tab_favicon"
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:scaleType="fitCenter"
+                android:src="@drawable/icon_web"
+                app:tint="?attr/colorPrimary"
+                tools:ignore="ContentDescription" />
+
+            <TextView
+                android:id="@+id/tab_title"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="8dp"
+                android:layout_marginEnd="4dp"
+                android:singleLine="true"
+                android:ellipsize="end"
+                android:textAppearance="?attr/textAppearanceLabelMedium"
+                android:textStyle="bold"
+                android:textColor="?attr/colorOnSurface"
+                tools:text="Website Title" />
+
+            <ImageView
+                android:id="@+id/tab_btn_close"
+                android:layout_width="34dp"
+                android:layout_height="34dp"
+                android:padding="8dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@drawable/icon_close"
+                app:tint="?attr/colorOnSurfaceVariant"
+                android:contentDescription="@string/app_cancel" />
+
+        </LinearLayout>
+
+        <View
+            android:id="@+id/tab_divider"
+            android:layout_width="match_parent"
+            android:layout_height="0.5dp"
+            android:background="?attr/colorOutlineVariant" />
+
+        <!-- Card Body: Thumbnail Preview & Placeholder -->
+        <FrameLayout
+            android:id="@+id/tab_preview_container"
+            android:layout_width="match_parent"
+            android:layout_height="135dp"
+            android:background="?attr/colorSurfaceContainerLow">
+
+            <!-- Thumbnail Image -->
+            <ImageView
+                android:id="@+id/tab_thumbnail"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="centerCrop"
+                android:visibility="gone"
+                tools:ignore="ContentDescription" />
+
+            <!-- Colored Placeholder with domain avatar and letter/icon -->
+            <LinearLayout
+                android:id="@+id/tab_placeholder"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:padding="10dp">
+
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/tab_avatar_card"
+                    style="@style/Widget.Material3.CardView.Filled"
+                    android:layout_width="46dp"
+                    android:layout_height="46dp"
+                    app:cardCornerRadius="23dp"
+                    app:cardElevation="0dp"
+                    android:backgroundTint="?attr/colorSurfaceContainerHighest">
+
+                    <TextView
+                        android:id="@+id/tab_avatar_letter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center"
+                        android:textAppearance="?attr/textAppearanceTitleLarge"
+                        android:textStyle="bold"
+                        android:textColor="?attr/colorPrimary"
+                        tools:text="G" />
+
+                    <ImageView
+                        android:id="@+id/tab_avatar_icon"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:layout_gravity="center"
+                        android:scaleType="fitCenter"
+                        android:src="@drawable/icon_web"
+                        app:tint="?attr/colorPrimary"
+                        android:visibility="gone"
+                        tools:ignore="ContentDescription" />
+
+                </com.google.android.material.card.MaterialCardView>
+
+                <TextView
+                    android:id="@+id/tab_domain"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:gravity="center"
+                    android:singleLine="true"
+                    android:ellipsize="end"
+                    android:textAppearance="?attr/textAppearanceLabelSmall"
+                    android:textColor="?attr/colorOutline"
+                    tools:text="example.com" />
+
+            </LinearLayout>
+
+            <!-- Incognito Badge Overlay in bottom-right corner -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/tab_incognito_badge"
+                style="@style/Widget.Material3.CardView.Filled"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom|end"
+                android:layout_margin="6dp"
+                app:cardCornerRadius="10dp"
+                app:cardElevation="2dp"
+                android:backgroundTint="#2D3748"
+                android:visibility="gone">
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingStart="7dp"
+                    android:paddingEnd="7dp"
+                    android:paddingTop="3dp"
+                    android:paddingBottom="3dp">
+
+                    <ImageView
+                        android:layout_width="12dp"
+                        android:layout_height="12dp"
+                        android:src="@drawable/icon_incognito"
+                        app:tint="#BA68C8"
+                        tools:ignore="ContentDescription" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:text="@string/incognito_tab"
+                        android:textAppearance="?attr/textAppearanceLabelSmall"
+                        android:textColor="#E6E1E5"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+            </com.google.android.material.card.MaterialCardView>
+
+        </FrameLayout>
+
+    </LinearLayout>
+
+</com.google.android.material.card.MaterialCardView>

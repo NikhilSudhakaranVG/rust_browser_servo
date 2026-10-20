@@ -77,4 +77,34 @@ public class BrowserContainer {
         }
         return count;
     }
+
+    public synchronized static int countNormal() {
+        int count = 0;
+        for (AlbumController controller : list) {
+            if (controller != null && !controller.isIncognito()) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    public synchronized static List<AlbumController> listNormal() {
+        List<AlbumController> result = new ArrayList<>();
+        for (AlbumController controller : list) {
+            if (controller != null && !controller.isIncognito()) {
+                result.add(controller);
+            }
+        }
+        return result;
+    }
+
+    public synchronized static List<AlbumController> listIncognito() {
+        List<AlbumController> result = new ArrayList<>();
+        for (AlbumController controller : list) {
+            if (controller != null && controller.isIncognito()) {
+                result.add(controller);
+            }
+        }
+        return result;
+    }
 }

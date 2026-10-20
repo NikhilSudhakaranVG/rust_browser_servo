@@ -19,6 +19,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
+import android.graphics.Canvas;
 import android.net.Uri;
 import android.util.AttributeSet;
 import android.util.Log;
@@ -106,6 +107,7 @@ public class NinjaWebView extends FrameLayout implements AlbumController {
 
     private final BrowserEngine engine;
     private Bitmap favicon;
+    private Bitmap thumbnail;
 
     // ── Constructors ──────────────────────────────────────────────────────
 
@@ -746,6 +748,42 @@ public class NinjaWebView extends FrameLayout implements AlbumController {
     }
 
     @Override
+    public Bitmap getThumbnail() {
+        return thumbnail;
+    }
+
+    public void setThumbnail(Bitmap thumbnail) {
+        this.thumbnail = thumbnail;
+    }
+
+    @Override
+    public void captureThumbnail() {
+        if (isIncognito) {
+            thumbnail = null;
+            return;
+        }
+        post(() -> {
+            try {
+                int width = getWidth();
+                int height = getHeight();
+                if (width > 0 && height > 0) {
+                    int targetWidth = 360;
+                    int targetHeight = (int) (height * (360f / width));
+                    if (targetHeight <= 0) targetHeight = 480;
+                    Bitmap bmp = Bitmap.createBitmap(targetWidth, targetHeight, Bitmap.Config.RGB_565);
+                    Canvas canvas = new Canvas(bmp);
+                    canvas.scale((float) targetWidth / width, (float) targetHeight / height);
+                    draw(canvas);
+                    if (thumbnail != null && !thumbnail.isRecycled()) {
+                        thumbnail.recycle();
+                    }
+                    thumbnail = bmp;
+                }
+            } catch (Throwable ignored) {}
+        });
+    }
+
+    @Override
     public synchronized void activate() {
         requestFocus();
         album.activate();
@@ -760,6 +798,7 @@ public class NinjaWebView extends FrameLayout implements AlbumController {
 
     @Override
     public synchronized void deactivate() {
+        captureThumbnail();
         clearFocus();
         album.deactivate();
         if (!isHomePage) {
@@ -807,6 +846,10 @@ public class NinjaWebView extends FrameLayout implements AlbumController {
                     android.webkit.CookieManager.getInstance().flush();
                 } catch (Exception ignored) {}
             }
+        }
+        if (thumbnail != null && !thumbnail.isRecycled()) {
+            thumbnail.recycle();
+            thumbnail = null;
         }
         engine.onPause();
         engine.destroy();

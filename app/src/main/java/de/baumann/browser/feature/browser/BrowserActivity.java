@@ -107,6 +107,7 @@ import androidx.core.view.WindowInsetsCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
 import androidx.preference.PreferenceManager;
 import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.webkit.WebViewFeature;
@@ -115,6 +116,8 @@ import androidx.activity.OnBackPressedCallback;
 import com.google.android.material.badge.BadgeDrawable;
 import com.google.android.material.badge.BadgeUtils;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.google.android.material.button.MaterialButton;
+import com.google.android.material.button.MaterialButtonToggleGroup;
 import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
@@ -200,6 +203,29 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
     private FloatingActionButton fab_new_tab;
     private FloatingActionButton fab_new_incognito_tab;
     private ListView listView;
+
+    // Tab Overview Grid & Switcher
+    private RecyclerView tabRecyclerView;
+    private TabGridAdapter tabGridAdapter;
+    private View dialogViewOverview;
+    private View overviewEmptyState;
+    private ImageView emptyStateIcon;
+    private TextView emptyStateTitle;
+    private TextView emptyStateSubtitle;
+    private MaterialButton emptyStateAction;
+    private MaterialButtonToggleGroup overviewSegmentedGroup;
+    private MaterialButton btnModeTabs;
+    private MaterialButton btnModeIncognito;
+    private MaterialButton btnModeBookmarks;
+    private MaterialButton btnModeHistory;
+    private TextView overviewTitle;
+    private MaterialButton btnCloseAllTabs;
+
+    private static final int OVERVIEW_MODE_TABS = 0;
+    private static final int OVERVIEW_MODE_INCOGNITO = 1;
+    private static final int OVERVIEW_MODE_BOOKMARKS = 2;
+    private static final int OVERVIEW_MODE_HISTORY = 3;
+    private int currentOverviewMode = OVERVIEW_MODE_TABS;
 
     // Views
     private TextInputEditText search_input;
@@ -383,11 +409,86 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
         requestCameraPermissionLauncher = registerForActivityResult(new ActivityResultContracts.RequestPermission(), this::startCustomFileChooser);
 
         MaterialAlertDialogBuilder builderOverview = new MaterialAlertDialogBuilder(context);
-        View dialogViewOverview = View.inflate(context, R.layout.dialog_overview, null);
+        dialogViewOverview = View.inflate(context, R.layout.dialog_overview, null);
         builderOverview.setView(dialogViewOverview);
         dialogOverview = builderOverview.create();
         bottom_navigation = dialogViewOverview.findViewById(R.id.bottom_navigation);
         tab_container = dialogViewOverview.findViewById(R.id.listTabs);
+
+        // Tab Grid RecyclerView setup
+        tabRecyclerView = dialogViewOverview.findViewById(R.id.tab_recycler_view);
+        tabRecyclerView.setLayoutManager(new GridLayoutManager(context, 2));
+        tabGridAdapter = new TabGridAdapter(context, new TabGridAdapter.OnTabClickListener() {
+            @Override
+            public void onTabSelected(AlbumController controller, int position) {
+                showAlbum(controller);
+                hideOverview();
+            }
+
+            @Override
+            public void onTabClosed(AlbumController controller, int position) {
+                handleTabDismissWithUndo(controller, position);
+            }
+
+            @Override
+            public void onTabLongClick(AlbumController controller, View view, int position) {
+                showOverflow(dialogOverview, view, 1, controller.getTitle(), controller.getUrl(), null, null, 0);
+            }
+        });
+        tabRecyclerView.setAdapter(tabGridAdapter);
+
+        ItemTouchHelper.SimpleCallback swipeCallback = new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT) {
+            @Override
+            public boolean onMove(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, @NonNull RecyclerView.ViewHolder target) {
+                return false;
+            }
+
+            @Override
+            public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
+                int position = viewHolder.getBindingAdapterPosition();
+                if (position != RecyclerView.NO_POSITION) {
+                    AlbumController controller = tabGridAdapter.getItem(position);
+                    if (controller != null) {
+                        handleTabDismissWithUndo(controller, position);
+                    }
+                }
+            }
+        };
+        new ItemTouchHelper(swipeCallback).attachToRecyclerView(tabRecyclerView);
+
+        overviewEmptyState = dialogViewOverview.findViewById(R.id.overview_empty_state);
+        emptyStateIcon = dialogViewOverview.findViewById(R.id.empty_state_icon);
+        emptyStateTitle = dialogViewOverview.findViewById(R.id.empty_state_title);
+        emptyStateSubtitle = dialogViewOverview.findViewById(R.id.empty_state_subtitle);
+        emptyStateAction = dialogViewOverview.findViewById(R.id.empty_state_action);
+        overviewSegmentedGroup = dialogViewOverview.findViewById(R.id.overview_segmented_group);
+        btnModeTabs = dialogViewOverview.findViewById(R.id.btn_mode_tabs);
+        btnModeIncognito = dialogViewOverview.findViewById(R.id.btn_mode_incognito);
+        btnModeBookmarks = dialogViewOverview.findViewById(R.id.btn_mode_bookmarks);
+        btnModeHistory = dialogViewOverview.findViewById(R.id.btn_mode_history);
+        overviewTitle = dialogViewOverview.findViewById(R.id.overview_title);
+        btnCloseAllTabs = dialogViewOverview.findViewById(R.id.btn_close_all_tabs);
+
+        ImageButton btnCloseOverview = dialogViewOverview.findViewById(R.id.btn_close_overview);
+        if (btnCloseOverview != null) {
+            btnCloseOverview.setOnClickListener(v -> hideOverview());
+        }
+
+        if (overviewSegmentedGroup != null) {
+            overviewSegmentedGroup.addOnButtonCheckedListener((group, checkedId, isChecked) -> {
+                if (!isChecked) return;
+                if (checkedId == R.id.btn_mode_tabs) {
+                    setOverviewMode(OVERVIEW_MODE_TABS);
+                } else if (checkedId == R.id.btn_mode_incognito) {
+                    setOverviewMode(OVERVIEW_MODE_INCOGNITO);
+                } else if (checkedId == R.id.btn_mode_bookmarks) {
+                    setOverviewMode(OVERVIEW_MODE_BOOKMARKS);
+                } else if (checkedId == R.id.btn_mode_history) {
+                    setOverviewMode(OVERVIEW_MODE_HISTORY);
+                }
+            });
+        }
+
         fab_new_tab = dialogViewOverview.findViewById(R.id.fab_new_tab);
         if (fab_new_tab != null) {
             fab_new_tab.setOnClickListener(v -> {
