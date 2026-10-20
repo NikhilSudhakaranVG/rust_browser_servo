@@ -1,12 +1,12 @@
 package de.baumann.browser.feature.browser.engine;
-import de.baumann.browser.feature.browser.NinjaWebView;
+
 import de.baumann.browser.feature.common.BrowserUnit;
 import de.baumann.browser.feature.common.HelperUnit;
 
 import android.content.Context;
-import android.content.Intent;
 import android.content.SharedPreferences;
 
+import java.util.Locale;
 
 /**
  * Shared URL pre-processing logic extracted from
@@ -18,7 +18,7 @@ import android.content.SharedPreferences;
  */
 public class UrlProcessor {
 
-    /** Outcome of {@link #process(String, SharedPreferences, String)}. */
+    /** Outcome of {@link #process(String, SharedPreferences, String, boolean)}. */
     public static final class Result {
         /** The final, cleaned URL to load. Never null. */
         public final String url;
@@ -30,16 +30,16 @@ public class UrlProcessor {
         public final boolean showHttpDialog;
 
         Result(String url) {
-            this.url = url;
+            this.url = url != null ? url : "";
             this.showTrackingDialog = false;
-            this.cleanUrl = url;
+            this.cleanUrl = this.url;
             this.showHttpDialog = false;
         }
 
         Result(String url, boolean showTrackingDialog, String cleanUrl, boolean showHttpDialog) {
-            this.url = url;
+            this.url = url != null ? url : "";
             this.showTrackingDialog = showTrackingDialog;
-            this.cleanUrl = cleanUrl;
+            this.cleanUrl = cleanUrl != null ? cleanUrl : this.url;
             this.showHttpDialog = showHttpDialog;
         }
     }
@@ -51,49 +51,81 @@ public class UrlProcessor {
     }
 
     /**
-     * Pre-processes a URL before loading:
-     * <ol>
-     *   <li>Strips {@code ;jsessionid=…} suffixes.</li>
-     *   <li>Applies custom redirect rules via {@link BrowserUnit#redirectURL}.</li>
-     *   <li>Resolves the URL via {@link BrowserUnit#queryWrapper} (search engine wrapping).</li>
-     *   <li>Detects tracking query parameters.</li>
-     *   <li>Detects plain-HTTP URLs for the upgrade dialog.</li>
-     * </ol>
-     *
-     * @param rawUrl  the URL as typed or received
-     * @param sp      SharedPreferences for user settings
-     * @param profile the active profile key
-     * @return a {@link Result} that the engine should act on
+     * Pre-processes a URL before loading, defaulting to showing dialogs if applicable.
      */
     public Result process(String rawUrl, SharedPreferences sp, String profile) {
-        String url = rawUrl;
+        return process(rawUrl, sp, profile, false);
+    }
 
-        // 1. Strip jsessionid tracking suffix
-        if (url.contains(";jsessionid=")) {
-            String tracking = url.substring(url.lastIndexOf(";"));
-            url = url.replace(tracking, "");
+    /**
+     * Pre-processes a URL before loading:
+     * <ol>
+     *   <li>Bypasses special non-web schemes (data:, blob:, file:, about:, javascript:, etc.).</li>
+     *   <li>Strips {@code ;jsessionid=…} suffixes safely while preserving query and fragments.</li>
+     *   <li>Resolves search queries via {@link BrowserUnit#queryWrapper}.</li>
+     *   <li>Detects tracking query parameters (if not skipped).</li>
+     *   <li>Detects plain-HTTP URLs for the upgrade dialog (if not skipped).</li>
+     * </ol>
+     *
+     * @param rawUrl      the URL as typed or received
+     * @param sp          SharedPreferences for user settings
+     * @param profile     the active profile key
+     * @param skipDialogs true if confirmation dialogs should be bypassed
+     * @return a {@link Result} that the engine should act on
+     */
+    public Result process(String rawUrl, SharedPreferences sp, String profile, boolean skipDialogs) {
+        if (rawUrl == null) {
+            return new Result("");
         }
 
-        // 2. Apply custom redirect rules
-        // Note: redirectURL requires a WebView reference in the original impl;
-        // we pass null-safe via BrowserUnit — adapt if the signature changes.
+        String trimmed = rawUrl.trim();
+        if (trimmed.isEmpty()) {
+            return new Result("");
+        }
+
+        // Fast-path for non-HTTP/non-web schemes
+        String lower = trimmed.toLowerCase(Locale.ROOT);
+        if (lower.startsWith("about:") || lower.startsWith("data:")
+                || lower.startsWith("blob:") || lower.startsWith("file:")
+                || lower.startsWith("javascript:") || lower.startsWith("content:")
+                || lower.startsWith("mailto:") || lower.startsWith("tel:")
+                || lower.startsWith("intent:") || lower.startsWith("foss://")) {
+            return new Result(trimmed);
+        }
+
+        String url = trimmed;
+
+        // 1. Strip jsessionid tracking suffix safely (preserve query and fragment)
+        if (url.contains(";jsessionid=")) {
+            url = url.replaceAll(";jsessionid=[^?#]*", "");
+        }
+
+        // 2. Resolve URL or wrap search query
+        boolean isRawUrlAUrl = BrowserUnit.isURL(url);
         String redirected = BrowserUnit.queryWrapper(context, url);
 
-        // 3. Detect tracking query params
-        if (sp.getBoolean(profile + "_trackingULS", true)
+        if (skipDialogs) {
+            return new Result(redirected);
+        }
+
+        // 3. Detect tracking query params (default is false; only for actual URL navigations, not search queries)
+        if (isRawUrlAUrl && sp != null
+                && sp.getBoolean(profile + "_trackingULS", false)
                 && redirected.contains("?")
                 && redirected.contains("/")) {
-            String lastIndex = redirected.substring(redirected.lastIndexOf("/"));
-            String tracking  = redirected.substring(redirected.lastIndexOf("?"));
-            String urlClean  = redirected.replace(tracking, "");
-            if (lastIndex.contains(tracking)) {
+            int qIdx = redirected.indexOf('?');
+            String tracking = redirected.substring(qIdx);
+            String urlClean = redirected.substring(0, qIdx);
+            int lastSlash = redirected.lastIndexOf('/');
+            if (lastSlash < qIdx && tracking.length() > 1) {
                 return new Result(redirected, true, urlClean, false);
             }
         }
 
         // 4. Detect plain HTTP (only ask once unless user said "never ask")
         if (redirected.startsWith("http://")
-                && sp.getString("dialog_neverAsk", "no").equals("no")) {
+                && sp != null
+                && "no".equals(sp.getString("dialog_neverAsk", "no"))) {
             return new Result(redirected, false, redirected, true);
         }
 
@@ -108,6 +140,8 @@ public class UrlProcessor {
         if (currentUrl == null || newUrl == null) return false;
         String currentDomain = HelperUnit.domain(currentUrl);
         String newDomain     = HelperUnit.domain(newUrl);
-        return currentDomain != null && !currentDomain.equals(newDomain);
+        if (currentDomain == null || newDomain == null) return false;
+        if (currentDomain.isEmpty() || newDomain.isEmpty()) return false;
+        return !currentDomain.equalsIgnoreCase(newDomain);
     }
 }

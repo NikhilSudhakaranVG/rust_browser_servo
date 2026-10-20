@@ -3,10 +3,17 @@ package de.baumann.browser.feature.browser.engine;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
+import android.net.Uri;
+import android.os.Handler;
+import android.os.Looper;
+import android.print.PrintDocumentAdapter;
 import android.util.Log;
 import android.widget.FrameLayout;
 import android.view.View;
 import android.webkit.ValueCallback;
+
+import androidx.annotation.Nullable;
+import androidx.preference.PreferenceManager;
 
 /**
  * {@link BrowserEngine} implementation backed by the Servo browser engine.
@@ -34,18 +41,6 @@ import android.webkit.ValueCallback;
  * <h3>Activation</h3>
  * <p>Background {@code ServoView} instances should be paused via
  * {@link #deactivate()} to release GPU resources.</p>
- *
- * <!-- ═══════════════════════════════════════════════════════════════════
- *   HOW TO ACTIVATE THIS CLASS
- *   ─────────────────────────────────────────────────────────────────────
- *   1. Download servo-aarch64-android.aar from:
- *        https://github.com/servo/servo/releases
- *   2. Place it at: servoview-local/servo-aarch64-android.aar
- *   3. In app/build.gradle, uncomment:
- *        implementation project(':servoview-local')
- *   4. In this file, uncomment every line marked // [SERVO_ACTIVE]
- *   5. Delete the STUB section below this comment block.
- * ═══════════════════════════════════════════════════════════════════ -->
  */
 public class ServoEngine implements BrowserEngine {
 
@@ -55,6 +50,10 @@ public class ServoEngine implements BrowserEngine {
 
     private final Context context;
     private final FrameLayout container;
+    private final UrlProcessor urlProcessor;
+    private final Handler mainHandler;
+    private Runnable pendingStubRunnable = null;
+
     private BrowserEngineClient client;
 
     // [SERVO_ACTIVE] Uncomment when AAR is available:
@@ -64,12 +63,15 @@ public class ServoEngine implements BrowserEngine {
     private String currentTitle = null;
     private boolean loading = false;
     private boolean active  = false;
+    private boolean isIncognito = false;
 
     // ── Constructor ───────────────────────────────────────────────────────
 
     public ServoEngine(Context context) {
-        this.context   = context;
-        this.container = new FrameLayout(context);
+        this.context      = context;
+        this.container    = new FrameLayout(context);
+        this.urlProcessor = new UrlProcessor(context);
+        this.mainHandler  = new Handler(Looper.getMainLooper());
 
         // [SERVO_ACTIVE] Replace the following STUB block with:
         //
@@ -107,60 +109,100 @@ public class ServoEngine implements BrowserEngine {
 
     @Override
     public void loadUrl(String url) {
-        currentUrl = url;
-        loading = true;
-        Log.i(TAG, "loadUrl: " + url + " (STUB — no-op until AAR linked)");
+        loadUrl(url, false);
+    }
 
-        // [SERVO_ACTIVE]: servoView.loadUri(url);
+    @Override
+    public void loadUrl(String url, boolean skipDialogs) {
+        cancelPendingStub();
+
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(context);
+        String profile = sp.getString("profile", "profileStandard");
+
+        UrlProcessor.Result result = urlProcessor.process(url, sp, profile, skipDialogs);
+
+        if (!skipDialogs && (result.showTrackingDialog || result.showHttpDialog)) {
+            if (result.showTrackingDialog && client != null) {
+                loading = false;
+                client.shouldOverrideUrlLoading("internal://tracking-dialog?url="
+                        + Uri.encode(result.url)
+                        + "&clean=" + Uri.encode(result.cleanUrl));
+                return;
+            }
+            if (result.showHttpDialog && client != null) {
+                loading = false;
+                client.shouldOverrideUrlLoading("internal://http-dialog?url="
+                        + Uri.encode(result.url));
+                return;
+            }
+        }
+
+        currentUrl = result.url;
+        loading = true;
+        Log.i(TAG, "loadUrl: " + result.url + " (STUB — no-op until AAR linked)");
+
+        // [SERVO_ACTIVE]: servoView.loadUri(result.url);
 
         // STUB: fire synthetic start/finish callbacks so the UI doesn't hang
         if (client != null) {
-            client.onPageStarted(url);
-            new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+            client.onPageStarted(result.url);
+            pendingStubRunnable = () -> {
+                pendingStubRunnable = null;
                 loading = false;
                 currentTitle = "Servo (STUB)";
-                if (client != null) client.onPageFinished(url, currentTitle);
-                if (client != null) client.onProgressChanged(100);
-            }, 300);
+                if (client != null) {
+                    client.onPageFinished(result.url, currentTitle);
+                    client.onProgressChanged(100);
+                }
+            };
+            mainHandler.postDelayed(pendingStubRunnable, 300);
         }
+    }
+
+    @Override
+    public void loadDataWithBaseURL(String baseUrl, String data, String mimeType, String encoding, String historyUrl) {
+        loadUrl("data:" + (mimeType != null ? mimeType : "text/html")
+                + ";charset=" + (encoding != null ? encoding : "UTF-8")
+                + "," + Uri.encode(data), true);
     }
 
     @Override
     public void reload() {
         if (currentUrl != null) {
-            loadUrl(currentUrl);
+            loadUrl(currentUrl, true);
         }
-        // [SERVO_ACTIVE]: servoView.reload();
+        // [SERVO_ACTIVE]: if (servoView != null) servoView.reload();
     }
 
     @Override
     public void goBack() {
-        // [SERVO_ACTIVE]: servoView.goBack();
+        // [SERVO_ACTIVE]: if (servoView != null) servoView.goBack();
         Log.i(TAG, "goBack (STUB)");
     }
 
     @Override
     public void goForward() {
-        // [SERVO_ACTIVE]: servoView.goForward();
+        // [SERVO_ACTIVE]: if (servoView != null) servoView.goForward();
         Log.i(TAG, "goForward (STUB)");
     }
 
     @Override
     public boolean canGoBack() {
-        // [SERVO_ACTIVE]: return servoView.canGoBack();
+        // [SERVO_ACTIVE]: return servoView != null && servoView.canGoBack();
         return false;
     }
 
     @Override
     public boolean canGoForward() {
-        // [SERVO_ACTIVE]: return servoView.canGoForward();
+        // [SERVO_ACTIVE]: return servoView != null && servoView.canGoForward();
         return false;
     }
 
     @Override
     public void stopLoading() {
+        cancelPendingStub();
         loading = false;
-        // [SERVO_ACTIVE]: servoView.stop();
+        // [SERVO_ACTIVE]: if (servoView != null) servoView.stop();
         Log.i(TAG, "stopLoading (STUB)");
     }
 
@@ -171,19 +213,68 @@ public class ServoEngine implements BrowserEngine {
     @Override public Bitmap  getFavicon() { return null;         }
     @Override public boolean isLoading()  { return loading;      }
 
-    // ── BrowserEngine: Settings ───────────────────────────────────────────
+    // ── BrowserEngine: Settings & Incognito ───────────────────────────────
+
+    @Override
+    public void setIncognito(boolean incognito) {
+        this.isIncognito = incognito;
+        // [SERVO_ACTIVE]: map incognito/private mode to Servo configuration
+    }
+
+    @Override
+    public boolean isIncognito() {
+        return isIncognito;
+    }
 
     @Override
     public void applyPreferences(SharedPreferences sp, String profile, String url) {
-        // TODO (Phase 5): map each prefs key to the Servo preferences API.
-        //
-        // When the AAR is available, reference the Servo preferences like:
-        //   servoView.setJavaScriptEnabled(sp.getBoolean(profile+"_javascript", true));
-        //   servoView.setUserAgent(userAgentString);
-        //   // etc.
-        //
-        // Until then, preferences are silently ignored in STUB mode.
+        // [SERVO_ACTIVE]: map each prefs key to the Servo preferences API.
         Log.d(TAG, "applyPreferences (STUB — preferences not yet applied to Servo)");
+    }
+
+    // ── BrowserEngine: Page Scrolling & Finding ───────────────────────────
+
+    @Override
+    public boolean pageUp(boolean top) {
+        // [SERVO_ACTIVE]: delegate to Servo view scrolling
+        return false;
+    }
+
+    @Override
+    public boolean pageDown(boolean bottom) {
+        // [SERVO_ACTIVE]: delegate to Servo view scrolling
+        return false;
+    }
+
+    @Override
+    public void findAllAsync(String find) {
+        // [SERVO_ACTIVE]: delegate to Servo search
+    }
+
+    @Override
+    public void findNext(boolean forward) {
+        // [SERVO_ACTIVE]: delegate to Servo search next
+    }
+
+    @Override
+    public void clearMatches() {
+        // [SERVO_ACTIVE]: delegate to Servo clear matches
+    }
+
+    @Override
+    public void clearHistory() {
+        // [SERVO_ACTIVE]: delegate to Servo clear history
+    }
+
+    @Override
+    public void clearCache(boolean includeDiskFiles) {
+        // [SERVO_ACTIVE]: delegate to Servo clear cache
+    }
+
+    @Nullable
+    @Override
+    public PrintDocumentAdapter createPrintDocumentAdapter(String documentName) {
+        return null;
     }
 
     // ── BrowserEngine: JS ─────────────────────────────────────────────────
@@ -191,7 +282,6 @@ public class ServoEngine implements BrowserEngine {
     @Override
     public void evaluateJavascript(String script, ValueCallback<String> callback) {
         // [SERVO_ACTIVE]: servoView.evaluateJavascript(script);
-        //   (Servo's JS result delivery mechanism differs — adapt callback when known.)
         Log.i(TAG, "evaluateJavascript (STUB): " + script.substring(0, Math.min(40, script.length())));
         if (callback != null) callback.onReceiveValue(null);
     }
@@ -212,6 +302,8 @@ public class ServoEngine implements BrowserEngine {
 
     @Override
     public void destroy() {
+        cancelPendingStub();
+        client = null;
         container.removeAllViews();
         // [SERVO_ACTIVE]: if (servoView != null) { servoView.onPause(); servoView = null; }
         Log.i(TAG, "destroy (STUB)");
@@ -220,13 +312,13 @@ public class ServoEngine implements BrowserEngine {
     @Override
     public void activate() {
         active = true;
-        // [SERVO_ACTIVE]: servoView.onResume();
+        // [SERVO_ACTIVE]: if (servoView != null) servoView.onResume();
     }
 
     @Override
     public void deactivate() {
         active = false;
-        // [SERVO_ACTIVE]: servoView.onPause();  // free GPU resources in background tabs
+        // [SERVO_ACTIVE]: if (servoView != null) servoView.onPause();
     }
 
     // ── BrowserEngine: Client ─────────────────────────────────────────────
@@ -234,6 +326,15 @@ public class ServoEngine implements BrowserEngine {
     @Override
     public void setClient(BrowserEngineClient client) {
         this.client = client;
+    }
+
+    // ── Internal Helpers ──────────────────────────────────────────────────
+
+    private void cancelPendingStub() {
+        if (pendingStubRunnable != null) {
+            mainHandler.removeCallbacks(pendingStubRunnable);
+            pendingStubRunnable = null;
+        }
     }
 
     // ── Servo callback builder ────────────────────────────────────────────
@@ -283,8 +384,6 @@ public class ServoEngine implements BrowserEngine {
     //                     public void cancel()         { cb.invoke(null); }
     //                 });
     //         }
-    //
-    //         // Add further Servo.Client callbacks here as the API evolves.
     //     };
     // }
 }

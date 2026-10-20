@@ -136,15 +136,31 @@ public interface BrowserEngineClient {
 
     // ── Permissions ───────────────────────────────────────────────────────
 
+    String PERMISSION_CAMERA = "camera";
+    String PERMISSION_MICROPHONE = "microphone";
+    String PERMISSION_GEOLOCATION = "geolocation";
+
     /**
      * Fired when the page requests camera/microphone/geolocation access.
      *
-     * @param resource  the permission being requested (e.g. "camera")
+     * @param resource  the permission being requested (e.g. {@link #PERMISSION_CAMERA})
      * @param origin    the requesting origin
      * @param grant     call to grant the permission
      * @param deny      call to deny the permission
      */
     void onPermissionRequest(String resource, String origin, Runnable grant, Runnable deny);
+
+    // ── File upload / picker ─────────────────────────────────────────────
+
+    /**
+     * Fired when the page requests a file chooser (e.g. &lt;input type="file"&gt;).
+     *
+     * @param filePathCallback callback to provide selected file URIs
+     * @return true if the client has handled the file chooser request
+     */
+    default boolean onShowFileChooser(android.webkit.ValueCallback<android.net.Uri[]> filePathCallback) {
+        return false;
+    }
 
     // ── Fullscreen video ─────────────────────────────────────────────────
 

@@ -323,11 +323,26 @@ public class NinjaWebView extends FrameLayout implements AlbumController {
                 String profile = prefs.getString("profile", "profileStandard");
                 boolean shouldGrant = false;
                 switch (resource) {
-                    case "camera":       shouldGrant = prefs.getBoolean(profile + "_camera", false); break;
-                    case "microphone":   shouldGrant = prefs.getBoolean(profile + "_microphone", false); break;
-                    case "geolocation":  shouldGrant = prefs.getBoolean(profile + "_location", false); break;
+                    case BrowserEngineClient.PERMISSION_CAMERA:
+                        shouldGrant = prefs.getBoolean(profile + "_camera", false);
+                        break;
+                    case BrowserEngineClient.PERMISSION_MICROPHONE:
+                        shouldGrant = prefs.getBoolean(profile + "_microphone", false);
+                        break;
+                    case BrowserEngineClient.PERMISSION_GEOLOCATION:
+                        shouldGrant = prefs.getBoolean(profile + "_location", false);
+                        break;
                 }
                 if (shouldGrant) grant.run(); else deny.run();
+            }
+
+            @Override
+            public boolean onShowFileChooser(ValueCallback<Uri[]> filePathCallback) {
+                if (browserController != null) {
+                    browserController.showFileChooser(context, filePathCallback);
+                    return true;
+                }
+                return false;
             }
 
             @Override
@@ -551,14 +566,8 @@ public class NinjaWebView extends FrameLayout implements AlbumController {
 
         if (isIncognito) {
             history = false;
-            WebView wv = getWebView();
-            if (wv != null) {
-                WebSettings ws = wv.getSettings();
-                ws.setSaveFormData(false);
-                ws.setCacheMode(WebSettings.LOAD_NO_CACHE);
-                ws.setGeolocationEnabled(false);
-            }
         }
+        engine.setIncognito(isIncognito);
     }
 
     @Override
@@ -576,14 +585,8 @@ public class NinjaWebView extends FrameLayout implements AlbumController {
         }
         if (incognito) {
             history = false;
-            WebView wv = getWebView();
-            if (wv != null) {
-                WebSettings ws = wv.getSettings();
-                ws.setSaveFormData(false);
-                ws.setCacheMode(WebSettings.LOAD_NO_CACHE);
-                ws.setGeolocationEnabled(false);
-            }
         }
+        engine.setIncognito(incognito);
     }
 
     // ── Tab state ─────────────────────────────────────────────────────────
@@ -705,42 +708,28 @@ public class NinjaWebView extends FrameLayout implements AlbumController {
     }
 
     public boolean pageUp(boolean top) {
-        WebView wv = getWebView();
-        return wv != null && wv.pageUp(top);
+        return engine.pageUp(top);
     }
 
     public boolean pageDown(boolean bottom) {
-        WebView wv = getWebView();
-        return wv != null && wv.pageDown(bottom);
+        return engine.pageDown(bottom);
     }
 
     public void findNext(boolean forward) {
-        WebView wv = getWebView();
-        if (wv != null) {
-            wv.findNext(forward);
-        }
+        engine.findNext(forward);
     }
 
     public void findAllAsync(String find) {
-        WebView wv = getWebView();
-        if (wv != null) {
-            wv.findAllAsync(find);
-        }
+        engine.findAllAsync(find);
     }
 
     @Nullable
     public PrintDocumentAdapter createPrintDocumentAdapter(String documentName) {
-        WebView wv = getWebView();
-        return wv != null ? wv.createPrintDocumentAdapter(documentName) : null;
+        return engine.createPrintDocumentAdapter(documentName);
     }
 
     public void loadDataWithBaseURL(String baseUrl, String data, String mimeType, String encoding, String historyUrl) {
-        WebView wv = getWebView();
-        if (wv != null) {
-            wv.loadDataWithBaseURL(baseUrl, data, mimeType, encoding, historyUrl);
-        } else if (data != null) {
-            engine.loadUrl("data:" + (mimeType != null ? mimeType : "text/html") + ";charset=" + (encoding != null ? encoding : "UTF-8") + "," + Uri.encode(data));
-        }
+        engine.loadDataWithBaseURL(baseUrl, data, mimeType, encoding, historyUrl);
     }
 
     // ── Profile helpers ───────────────────────────────────────────────────
@@ -872,8 +861,8 @@ public class NinjaWebView extends FrameLayout implements AlbumController {
         menuGrid.setOnItemClickListener((parent, view, position, id) -> {
             dialog.cancel();
             switch (position) {
-                case 0: engine.loadUrl(BrowserUnit.queryWrapper(context, finalClean)); break;
-                case 1: engine.loadUrl(BrowserUnit.queryWrapper(context, finalUrl));   break;
+                case 0: engine.loadUrl(finalClean, true); break;
+                case 1: engine.loadUrl(finalUrl, true);   break;
                 case 2:
                     View editView = View.inflate(context, R.layout.dialog_edit_text, null);
                     TextInputEditText input = editView.findViewById(R.id.textInput);
@@ -885,8 +874,7 @@ public class NinjaWebView extends FrameLayout implements AlbumController {
                             .setView(editView)
                             .setPositiveButton(R.string.app_ok, (d, i) -> {
                                 d.dismiss();
-                                engine.loadUrl(BrowserUnit.queryWrapper(context,
-                                        Objects.requireNonNull(input.getText()).toString()));
+                                engine.loadUrl(Objects.requireNonNull(input.getText()).toString(), true);
                             })
                             .create().show();
                     break;
@@ -939,14 +927,14 @@ public class NinjaWebView extends FrameLayout implements AlbumController {
             dialog.cancel();
             switch (position) {
                 case 0:
-                    engine.loadUrl(BrowserUnit.queryWrapper(context, secure));
+                    engine.loadUrl(secure, true);
                     break;
                 case 1:
-                    engine.loadUrl(BrowserUnit.queryWrapper(context, unSecure));
+                    engine.loadUrl(unSecure, true);
                     break;
                 case 2:
                     sp.edit().putString("dialog_neverAsk", "yes").apply();
-                    engine.loadUrl(BrowserUnit.queryWrapper(context, unSecure));
+                    engine.loadUrl(unSecure, true);
                     break;
             }
         });

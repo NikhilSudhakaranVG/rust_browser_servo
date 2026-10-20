@@ -1,9 +1,7 @@
 package de.baumann.browser.feature.browser.engine;
+
 import de.baumann.browser.feature.browser.AdBlock;
-import de.baumann.browser.feature.browser.BrowserActivity;
-import de.baumann.browser.feature.browser.BrowserController;
 import de.baumann.browser.feature.browser.List_standard;
-import de.baumann.browser.feature.browser.NinjaWebView;
 import de.baumann.browser.feature.common.HelperUnit;
 
 import android.annotation.SuppressLint;
@@ -12,7 +10,9 @@ import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.net.http.SslError;
+import android.print.PrintDocumentAdapter;
 import android.view.View;
+import android.view.ViewGroup;
 import android.webkit.CookieManager;
 import android.webkit.DownloadListener;
 import android.webkit.GeolocationPermissions;
@@ -21,45 +21,52 @@ import android.webkit.JsResult;
 import android.webkit.PermissionRequest;
 import android.webkit.SslErrorHandler;
 import android.webkit.ValueCallback;
+import android.webkit.WebBackForwardList;
 import android.webkit.WebChromeClient;
+import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
+import androidx.annotation.Nullable;
 import androidx.preference.PreferenceManager;
 import androidx.webkit.WebSettingsCompat;
 import androidx.webkit.WebViewFeature;
 
 import java.io.ByteArrayInputStream;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
-
 
 /**
  * {@link BrowserEngine} implementation backed by Android's {@link WebView}.
  *
  * <p>This adapter wraps the existing WebView + WebViewClient + WebChromeClient
  * stack so that the host can interact with it through the engine-agnostic
- * {@link BrowserEngine} interface. The goal is <em>zero behaviour change</em>
- * relative to the original {@link de.baumann.browser.feature.browser.NinjaWebView}
- * implementation.</p>
- *
- * <p>All WebView-specific logic lives here. The host never imports
- * {@code android.webkit} directly.</p>
+ * {@link BrowserEngine} interface. The goal is zero behaviour change
+ * relative to the original implementation while optimizing performance,
+ * memory, thread safety, and resource handling.</p>
  */
 public class WebViewEngine implements BrowserEngine {
+
+    private static final byte[] EMPTY_BYTES = new byte[0];
+    private static String sCachedDefaultUserAgent = null;
 
     // ── Fields ────────────────────────────────────────────────────────────
 
     private final Context context;
     private final WebView webView;
     private BrowserEngineClient client;
-    private AdBlock adBlock;
-    private List_standard listStandard;
+    private final AdBlock adBlock;
+    private final List_standard listStandard;
+    private final UrlProcessor urlProcessor;
+
+    private volatile boolean adBlockEnabled = true;
+    private boolean isIncognito = false;
     private boolean loading = false;
     private boolean stopped = false;
-    private final UrlProcessor urlProcessor;
 
     // ── Constructor ───────────────────────────────────────────────────────
 
@@ -76,13 +83,15 @@ public class WebViewEngine implements BrowserEngine {
         webView.setDownloadListener(buildDownloadListener());
 
         WebSettings settings = webView.getSettings();
-        settings.setJavaScriptEnabled(true); // will be properly set in applyPreferences()
+        settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);
+        settings.setDatabaseEnabled(true);
         settings.setSupportZoom(true);
         settings.setBuiltInZoomControls(true);
         settings.setDisplayZoomControls(false);
         settings.setSupportMultipleWindows(true);
         settings.setAllowFileAccess(true);
+        settings.setAllowContentAccess(true);
         settings.setDefaultTextEncodingName("utf-8");
         settings.setSafeBrowsingEnabled(true);
         settings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
@@ -108,11 +117,14 @@ public class WebViewEngine implements BrowserEngine {
 
     @Override
     public void loadUrl(String url) {
+        loadUrl(url, false);
+    }
+
+    @Override
+    public void loadUrl(String url, boolean skipDialogs) {
         stopped = false;
         SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(context);
         String profile = sp.getString("profile", "profileStandard");
-        listStandard = new List_standard(context);
-        if (listStandard.isWhite(url)) profile = HelperUnit.domain(url);
 
         // Profile reset on domain change
         if (UrlProcessor.isCrossDomain(webView.getUrl(), url)
@@ -121,14 +133,17 @@ public class WebViewEngine implements BrowserEngine {
             profile = "profileStandard";
         }
 
-        UrlProcessor.Result result = urlProcessor.process(url, sp, profile);
+        // Whitelist overrides domain profile
+        if (listStandard != null && listStandard.isWhite(url)) {
+            profile = HelperUnit.domain(url);
+        }
 
-        if (result.showTrackingDialog || result.showHttpDialog) {
-            // Delegate dialog display back to the client (BrowserActivity handles UI)
+        UrlProcessor.Result result = urlProcessor.process(url, sp, profile, skipDialogs);
+
+        if (!skipDialogs && (result.showTrackingDialog || result.showHttpDialog)) {
             if (result.showTrackingDialog && client != null) {
-                // Fire a synthetic "override" so the host can show the dialog
-                // The host calls loadUrl again with the user's chosen URL.
                 stopped = true;
+                loading = false;
                 webView.stopLoading();
                 client.shouldOverrideUrlLoading("internal://tracking-dialog?url="
                         + Uri.encode(result.url)
@@ -137,6 +152,7 @@ public class WebViewEngine implements BrowserEngine {
             }
             if (result.showHttpDialog && client != null) {
                 stopped = true;
+                loading = false;
                 webView.stopLoading();
                 client.shouldOverrideUrlLoading("internal://http-dialog?url="
                         + Uri.encode(result.url));
@@ -145,7 +161,13 @@ public class WebViewEngine implements BrowserEngine {
         }
 
         applyPreferences(sp, profile, result.url);
-        webView.loadUrl(result.url, getRequestHeaders(sp, profile));
+        webView.loadUrl(result.url, getRequestHeaders(sp, profile, result.url));
+    }
+
+    @Override
+    public void loadDataWithBaseURL(String baseUrl, String data, String mimeType, String encoding, String historyUrl) {
+        stopped = false;
+        webView.loadDataWithBaseURL(baseUrl, data, mimeType, encoding, historyUrl);
     }
 
     @Override
@@ -153,24 +175,31 @@ public class WebViewEngine implements BrowserEngine {
         stopped = false;
         SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(context);
         String profile = sp.getString("profile", "profileStandard");
-        applyPreferences(sp, profile, webView.getUrl());
+        String currentUrl = webView.getUrl();
+        if (listStandard != null && listStandard.isWhite(currentUrl)) {
+            profile = HelperUnit.domain(currentUrl);
+        }
+        applyPreferences(sp, profile, currentUrl);
         webView.reload();
     }
 
     @Override
     public void goBack() {
         SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(context);
-        // Reset profile on domain change when going back
         if (webView.canGoBack()) {
-            android.webkit.WebBackForwardList list = webView.copyBackForwardList();
+            WebBackForwardList list = webView.copyBackForwardList();
             int idx = list.getCurrentIndex();
             if (idx > 0) {
                 String historyUrl = list.getItemAtIndex(idx - 1).getUrl();
                 if (UrlProcessor.isCrossDomain(webView.getUrl(), historyUrl)
                         && sp.getBoolean("sp_standard_always", true)) {
-                    sp.edit().putString("profile", "profileStandard").commit();
+                    sp.edit().putString("profile", "profileStandard").apply();
                 }
-                applyPreferences(sp, sp.getString("profile", "profileStandard"), historyUrl);
+                String profile = sp.getString("profile", "profileStandard");
+                if (listStandard != null && listStandard.isWhite(historyUrl)) {
+                    profile = HelperUnit.domain(historyUrl);
+                }
+                applyPreferences(sp, profile, historyUrl);
             }
         }
         webView.goBack();
@@ -178,6 +207,23 @@ public class WebViewEngine implements BrowserEngine {
 
     @Override
     public void goForward() {
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(context);
+        if (webView.canGoForward()) {
+            WebBackForwardList list = webView.copyBackForwardList();
+            int idx = list.getCurrentIndex();
+            if (idx >= 0 && idx + 1 < list.getSize()) {
+                String historyUrl = list.getItemAtIndex(idx + 1).getUrl();
+                if (UrlProcessor.isCrossDomain(webView.getUrl(), historyUrl)
+                        && sp.getBoolean("sp_standard_always", true)) {
+                    sp.edit().putString("profile", "profileStandard").apply();
+                }
+                String profile = sp.getString("profile", "profileStandard");
+                if (listStandard != null && listStandard.isWhite(historyUrl)) {
+                    profile = HelperUnit.domain(historyUrl);
+                }
+                applyPreferences(sp, profile, historyUrl);
+            }
+        }
         webView.goForward();
     }
 
@@ -194,6 +240,7 @@ public class WebViewEngine implements BrowserEngine {
     @Override
     public void stopLoading() {
         stopped = true;
+        loading = false;
         webView.stopLoading();
     }
 
@@ -219,31 +266,58 @@ public class WebViewEngine implements BrowserEngine {
         return loading;
     }
 
-    // ── BrowserEngine: Settings ───────────────────────────────────────────
+    // ── BrowserEngine: Settings & Incognito ───────────────────────────────
+
+    @Override
+    public void setIncognito(boolean incognito) {
+        this.isIncognito = incognito;
+        WebSettings ws = webView.getSettings();
+        if (incognito) {
+            ws.setSaveFormData(false);
+            ws.setCacheMode(WebSettings.LOAD_NO_CACHE);
+            ws.setGeolocationEnabled(false);
+        } else {
+            ws.setSaveFormData(true);
+            ws.setCacheMode(WebSettings.LOAD_DEFAULT);
+        }
+    }
+
+    @Override
+    public boolean isIncognito() {
+        return isIncognito;
+    }
 
     @SuppressLint({"SetJavaScriptEnabled", "JavascriptInterface"})
     @Override
     public void applyPreferences(SharedPreferences sp, String profile, String url) {
-        listStandard = new List_standard(context);
         String effectiveProfile = profile;
-        if (listStandard.isWhite(url)) {
+        if (listStandard != null && listStandard.isWhite(url)) {
             effectiveProfile = HelperUnit.domain(url);
         }
+        this.adBlockEnabled = sp.getBoolean(effectiveProfile + "_adBlock", true);
 
         WebSettings ws = webView.getSettings();
-        ws.setTextZoom(Integer.parseInt(
-                Objects.requireNonNull(sp.getString("sp_fontSize", "100"))));
+        try {
+            int fontSize = Integer.parseInt(Objects.requireNonNull(sp.getString("sp_fontSize", "100")));
+            ws.setTextZoom(fontSize);
+        } catch (Exception e) {
+            ws.setTextZoom(100);
+        }
 
         // Dark mode
+        boolean nightMode = sp.getBoolean(effectiveProfile + "_night", true);
         if (WebViewFeature.isFeatureSupported(WebViewFeature.ALGORITHMIC_DARKENING)) {
-            WebSettingsCompat.setAlgorithmicDarkeningAllowed(
-                    ws, sp.getBoolean(effectiveProfile + "_night", true));
+            WebSettingsCompat.setAlgorithmicDarkeningAllowed(ws, nightMode);
+        } else if (WebViewFeature.isFeatureSupported(WebViewFeature.FORCE_DARK)) {
+            WebSettingsCompat.setForceDark(ws, nightMode
+                    ? WebSettingsCompat.FORCE_DARK_ON
+                    : WebSettingsCompat.FORCE_DARK_OFF);
         }
 
         // User agent
         String desktopUA = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
                 + "(KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36";
-        String mobileUA = WebSettings.getDefaultUserAgent(context);
+        String mobileUA = getCachedDefaultUserAgent();
         String ownUA = sp.getString("sp_userAgent", "");
         if (!ownUA.isEmpty() && sp.getBoolean("userAgentSwitch", false)) {
             mobileUA = ownUA;
@@ -261,21 +335,82 @@ public class WebViewEngine implements BrowserEngine {
         }
 
         ws.setDomStorageEnabled(sp.getBoolean(effectiveProfile + "_dom", true));
-        ws.setMediaPlaybackRequiresUserGesture(sp.getBoolean(effectiveProfile + "_saveData", true));
+        ws.setMediaPlaybackRequiresUserGesture(sp.getBoolean(effectiveProfile + "_saveData", false));
         ws.setBlockNetworkImage(!sp.getBoolean(effectiveProfile + "_images", true));
-        ws.setGeolocationEnabled(sp.getBoolean(effectiveProfile + "_location", false));
+        ws.setGeolocationEnabled(!isIncognito && sp.getBoolean(effectiveProfile + "_location", false));
         ws.setJavaScriptEnabled(sp.getBoolean(effectiveProfile + "_javascript", true));
         ws.setJavaScriptCanOpenWindowsAutomatically(
                 sp.getBoolean(effectiveProfile + "_javascriptPopUp", false));
 
+        if (isIncognito) {
+            ws.setSaveFormData(false);
+            ws.setCacheMode(WebSettings.LOAD_NO_CACHE);
+            ws.setGeolocationEnabled(false);
+        }
+
         // Cookies
         try {
             CookieManager mgr = CookieManager.getInstance();
-            mgr.setAcceptCookie(sp.getBoolean(effectiveProfile + "_cookies", true));
+            boolean acceptCookies = !isIncognito && sp.getBoolean(effectiveProfile + "_cookies", true);
+            mgr.setAcceptCookie(acceptCookies);
             mgr.setAcceptThirdPartyCookies(
-                    webView, sp.getBoolean(effectiveProfile + "_cookiesThirdParty", false));
+                    webView, !isIncognito && acceptCookies && sp.getBoolean(effectiveProfile + "_cookiesThirdParty", false));
         } catch (Exception ignored) {
         }
+    }
+
+    private String getCachedDefaultUserAgent() {
+        if (sCachedDefaultUserAgent == null) {
+            try {
+                sCachedDefaultUserAgent = WebSettings.getDefaultUserAgent(context);
+            } catch (Exception e) {
+                sCachedDefaultUserAgent = "";
+            }
+        }
+        return sCachedDefaultUserAgent;
+    }
+
+    // ── BrowserEngine: Page Scrolling & Finding ───────────────────────────
+
+    @Override
+    public boolean pageUp(boolean top) {
+        return webView.pageUp(top);
+    }
+
+    @Override
+    public boolean pageDown(boolean bottom) {
+        return webView.pageDown(bottom);
+    }
+
+    @Override
+    public void findAllAsync(String find) {
+        webView.findAllAsync(find);
+    }
+
+    @Override
+    public void findNext(boolean forward) {
+        webView.findNext(forward);
+    }
+
+    @Override
+    public void clearMatches() {
+        webView.clearMatches();
+    }
+
+    @Override
+    public void clearHistory() {
+        webView.clearHistory();
+    }
+
+    @Override
+    public void clearCache(boolean includeDiskFiles) {
+        webView.clearCache(includeDiskFiles);
+    }
+
+    @Nullable
+    @Override
+    public PrintDocumentAdapter createPrintDocumentAdapter(String documentName) {
+        return webView.createPrintDocumentAdapter(documentName);
     }
 
     // ── BrowserEngine: JS ─────────────────────────────────────────────────
@@ -290,21 +425,33 @@ public class WebViewEngine implements BrowserEngine {
     @Override
     public void onPause() {
         webView.onPause();
-        webView.pauseTimers();
     }
 
     @Override
     public void onResume() {
-        webView.resumeTimers();
         webView.onResume();
     }
 
     @Override
     public void destroy() {
         stopLoading();
+        client = null;
+        if (isIncognito) {
+            try {
+                webView.clearCache(true);
+                webView.clearFormData();
+                webView.clearSslPreferences();
+            } catch (Exception ignored) {}
+        }
+        webView.setWebViewClient(new WebViewClient());
+        webView.setWebChromeClient(new WebChromeClient());
+        webView.setDownloadListener(null);
         webView.onPause();
         webView.clearHistory();
         webView.setVisibility(View.GONE);
+        if (webView.getParent() instanceof ViewGroup) {
+            ((ViewGroup) webView.getParent()).removeView(webView);
+        }
         webView.removeAllViews();
         webView.destroy();
     }
@@ -328,13 +475,21 @@ public class WebViewEngine implements BrowserEngine {
 
     // ── Internal helpers ──────────────────────────────────────────────────
 
-    private java.util.HashMap<String, String> getRequestHeaders(SharedPreferences sp, String profile) {
-        java.util.HashMap<String, String> headers = new java.util.HashMap<>();
+    private Map<String, String> getRequestHeaders(SharedPreferences sp, String profile, String targetUrl) {
+        Map<String, String> headers = new HashMap<>();
         headers.put("DNT", "1");
         headers.put("Sec-GPC", "1");
         headers.put("X-Requested-With", "com.duckduckgo.mobile.android");
-        headers.put("Referer", webView.getUrl() != null ? webView.getUrl() : "");
-        if (sp.getBoolean(profile + "_saveData", true)) headers.put("Save-Data", "on");
+        String currentUrl = webView.getUrl();
+        if (currentUrl != null && (currentUrl.startsWith("http://") || currentUrl.startsWith("https://"))) {
+            // Prevent referer leakage to plain HTTP when navigating from HTTPS
+            if (!(currentUrl.startsWith("https://") && targetUrl != null && targetUrl.startsWith("http://"))) {
+                headers.put("Referer", currentUrl);
+            }
+        }
+        if (sp.getBoolean(profile + "_saveData", false)) {
+            headers.put("Save-Data", "on");
+        }
         return headers;
     }
 
@@ -357,13 +512,33 @@ public class WebViewEngine implements BrowserEngine {
             }
 
             @Override
+            public void onReceivedError(WebView view, int errorCode, String description, String failingUrl) {
+                loading = false;
+                if (client != null) {
+                    client.onReceivedError(errorCode, description, failingUrl);
+                }
+            }
+
+            @Override
+            public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
+                if (request != null && request.isForMainFrame()) {
+                    loading = false;
+                    if (client != null && error != null) {
+                        client.onReceivedError(error.getErrorCode(),
+                                error.getDescription() != null ? error.getDescription().toString() : "Error",
+                                request.getUrl() != null ? request.getUrl().toString() : "");
+                    }
+                }
+            }
+
+            @Override
             public boolean onRenderProcessGone(WebView view,
                     android.webkit.RenderProcessGoneDetail detail) {
-                // Notify client with a generic error
+                loading = false;
                 if (client != null) {
                     client.onReceivedError(-1, "Render process gone", view.getUrl());
                 }
-                return true; // handled — do not crash the app
+                return true;
             }
 
             @Override
@@ -381,25 +556,30 @@ public class WebViewEngine implements BrowserEngine {
 
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
-                String url = request.getUrl().toString();
-                if (client != null) return client.shouldOverrideUrlLoading(url);
+                if (request != null && request.getUrl() != null) {
+                    String url = request.getUrl().toString();
+                    if (client != null) return client.shouldOverrideUrlLoading(url);
+                }
                 return false;
             }
 
             @Override
             public WebResourceResponse shouldInterceptRequest(WebView view,
                     WebResourceRequest request) {
+                if (request == null || request.getUrl() == null) {
+                    return super.shouldInterceptRequest(view, request);
+                }
                 String url = request.getUrl().toString();
-                SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(context);
-                String profile = sp.getString("profile", "profileStandard");
-                boolean adBlockEnabled = sp.getBoolean(profile + "_adBlock", true);
-                if (adBlockEnabled && adBlock.isAd(url)) {
+                if (url.startsWith("data:") || url.startsWith("blob:") || url.startsWith("about:") || url.startsWith("file:")) {
+                    return super.shouldInterceptRequest(view, request);
+                }
+                if (adBlockEnabled && adBlock != null && adBlock.isAd(url)) {
                     return new WebResourceResponse("text/plain", "utf-8",
-                            new ByteArrayInputStream("".getBytes()));
+                            new ByteArrayInputStream(EMPTY_BYTES));
                 }
                 if (client != null && client.shouldBlockRequest(url)) {
                     return new WebResourceResponse("text/plain", "utf-8",
-                            new ByteArrayInputStream("".getBytes()));
+                            new ByteArrayInputStream(EMPTY_BYTES));
                 }
                 return super.shouldInterceptRequest(view, request);
             }
@@ -461,7 +641,7 @@ public class WebViewEngine implements BrowserEngine {
             public void onGeolocationPermissionsShowPrompt(String origin,
                     GeolocationPermissions.Callback callback) {
                 if (client != null) {
-                    client.onPermissionRequest("geolocation", origin,
+                    client.onPermissionRequest(BrowserEngineClient.PERMISSION_GEOLOCATION, origin,
                             () -> callback.invoke(origin, true, false),
                             () -> callback.invoke(origin, false, false));
                 } else {
@@ -470,16 +650,42 @@ public class WebViewEngine implements BrowserEngine {
             }
 
             @Override
+            public void onGeolocationPermissionsHidePrompt() {
+                // No-op
+            }
+
+            @Override
             public void onPermissionRequest(PermissionRequest request) {
-                if (client != null) {
-                    String resource = request.getResources().length > 0
-                            ? request.getResources()[0] : "unknown";
-                    client.onPermissionRequest(resource, request.getOrigin().toString(),
-                            () -> request.grant(request.getResources()),
-                            request::deny);
-                } else {
+                if (client != null && request != null && request.getResources() != null) {
+                    String[] resources = request.getResources();
+                    for (String res : resources) {
+                        String mapped = res;
+                        if (PermissionRequest.RESOURCE_VIDEO_CAPTURE.equals(res)) {
+                            mapped = BrowserEngineClient.PERMISSION_CAMERA;
+                        } else if (PermissionRequest.RESOURCE_AUDIO_CAPTURE.equals(res)) {
+                            mapped = BrowserEngineClient.PERMISSION_MICROPHONE;
+                        }
+                        client.onPermissionRequest(mapped,
+                                request.getOrigin() != null ? request.getOrigin().toString() : "",
+                                () -> {
+                                    try {
+                                        request.grant(new String[]{res});
+                                    } catch (Exception ignored) {}
+                                },
+                                () -> {
+                                    try {
+                                        request.deny();
+                                    } catch (Exception ignored) {}
+                                });
+                    }
+                } else if (request != null) {
                     request.deny();
                 }
+            }
+
+            @Override
+            public void onPermissionRequestCanceled(PermissionRequest request) {
+                // No-op
             }
 
             @Override
@@ -495,8 +701,9 @@ public class WebViewEngine implements BrowserEngine {
             @Override
             public boolean onShowFileChooser(WebView webView, ValueCallback<Uri[]> filePathCallback,
                     FileChooserParams fileChooserParams) {
-                // Delegate to the activity via BrowserController
-                // (unchanged — BrowserActivity already handles this)
+                if (client != null) {
+                    return client.onShowFileChooser(filePathCallback);
+                }
                 return false;
             }
         };

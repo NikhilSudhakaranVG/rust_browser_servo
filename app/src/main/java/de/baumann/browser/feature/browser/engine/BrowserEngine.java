@@ -1,9 +1,13 @@
 package de.baumann.browser.feature.browser.engine;
-import de.baumann.browser.feature.browser.NinjaWebView;
 
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
+import android.net.Uri;
+import android.print.PrintDocumentAdapter;
 import android.view.View;
+import android.webkit.ValueCallback;
+
+import androidx.annotation.Nullable;
 
 /**
  * Abstract interface for browser rendering engines.
@@ -33,6 +37,26 @@ public interface BrowserEngine {
      * {@link UrlProcessor}.
      */
     void loadUrl(String url);
+
+    /**
+     * Loads the given URL, optionally skipping user confirmation dialogs
+     * (e.g. tracking-parameter confirmation or HTTP upgrade dialogs).
+     *
+     * @param url          the URL to load
+     * @param skipDialogs  true if dialogs have already been resolved or should be bypassed
+     */
+    default void loadUrl(String url, boolean skipDialogs) {
+        loadUrl(url);
+    }
+
+    /**
+     * Loads raw HTML data into the engine.
+     */
+    default void loadDataWithBaseURL(String baseUrl, String data, String mimeType, String encoding, String historyUrl) {
+        loadUrl("data:" + (mimeType != null ? mimeType : "text/html")
+                + ";charset=" + (encoding != null ? encoding : "UTF-8")
+                + "," + Uri.encode(data), true);
+    }
 
     /** Reloads the current page, re-applying current preferences. */
     void reload();
@@ -78,6 +102,18 @@ public interface BrowserEngine {
      */
     void applyPreferences(SharedPreferences sp, String profile, String url);
 
+    /**
+     * Sets incognito / private browsing mode on the engine.
+     *
+     * @param incognito true if private mode is enabled
+     */
+    default void setIncognito(boolean incognito) {}
+
+    /** @return true if the engine is currently operating in incognito mode. */
+    default boolean isIncognito() {
+        return false;
+    }
+
     // ── JS Injection ─────────────────────────────────────────────────────
 
     /**
@@ -85,7 +121,40 @@ public interface BrowserEngine {
      * Results are delivered asynchronously via the provided callback, or
      * the callback may be null.
      */
-    void evaluateJavascript(String script, android.webkit.ValueCallback<String> callback);
+    void evaluateJavascript(String script, ValueCallback<String> callback);
+
+    // ── Page Scrolling & Finding ─────────────────────────────────────────
+
+    /** Scrolls the page up. */
+    default boolean pageUp(boolean top) {
+        return false;
+    }
+
+    /** Scrolls the page down. */
+    default boolean pageDown(boolean bottom) {
+        return false;
+    }
+
+    /** Asynchronously finds all occurrences of the query string on the page. */
+    default void findAllAsync(String find) {}
+
+    /** Highlights and scrolls to the next/previous match. */
+    default void findNext(boolean forward) {}
+
+    /** Clears active search matches. */
+    default void clearMatches() {}
+
+    /** Clears engine navigation history. */
+    default void clearHistory() {}
+
+    /** Clears engine resource cache. */
+    default void clearCache(boolean includeDiskFiles) {}
+
+    /** Creates a print document adapter for printing the current page. */
+    @Nullable
+    default PrintDocumentAdapter createPrintDocumentAdapter(String documentName) {
+        return null;
+    }
 
     // ── Lifecycle ────────────────────────────────────────────────────────
 
