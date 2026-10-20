@@ -1,7 +1,5 @@
 "FOSS Browser" is a fully free (as in freedom) open source Android browser: privacy-friendly with a modern user interface. - Your privacy - your data.
 
-<b>Project Homepage with further info: https://codeberg.org/Gaukler_Faun/FOSS_Browser</b>
-
 
 -------------------------------------------------
 <b>UI/Handling</b>

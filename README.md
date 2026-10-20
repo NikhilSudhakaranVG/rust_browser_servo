@@ -1,14 +1,8 @@
 <p align="center">
-<img src="https://codeberg.org/Gaukler_Faun/FOSS_Browser/raw/branch/master/fastlane/metadata/android/en-US/images/featuresGraphic.png" alt="FOSS Browser" width="600"/>
+<img src="fastlane/metadata/android/en-US/images/featuresGraphic.png" alt="FOSS Browser" width="600"/>
 </p>
 
-<p align="center">
-<a href="https://translate.codeberg.org/engage/foss-browser/">
-<img src="https://translate.codeberg.org/widgets/foss-browser/-/strings/287x66-white.png" alt="Übersetzungsstatus" />
-</a></p>
-
-
-__[README](https://codeberg.org/Gaukler_Faun/FOSS_Browser/src/branch/master/README.md)__ | __[WIKI](https://codeberg.org/Gaukler_Faun/FOSS_Browser/wiki)__ | __[FAQs](https://codeberg.org/Gaukler_Faun/FOSS_Browser/src/branch/master/FAQs.md)__ | __[Releases](https://codeberg.org/Gaukler_Faun/FOSS_Browser/releases)__ | __[Changelog](https://codeberg.org/Gaukler_Faun/FOSS_Browser/src/branch/master/CHANGELOG.md)__ | __[ISSUES](https://codeberg.org/Gaukler_Faun/FOSS_Browser/issues)__ | __[Privacy](https://codeberg.org/Gaukler_Faun/FOSS_Browser/src/branch/master/PRIVACY.md)__ | __[License](https://codeberg.org/Gaukler_Faun/FOSS_Browser/src/branch/master/LICENSE.md)__ | __[Code of conduct](https://codeberg.org/Gaukler_Faun/FOSS_Browser/src/branch/master/CODE_OF_CONDUCT.md)__ | __[Help translating](https://translate.codeberg.org/projects/foss-browser/)__
+__[README](README.md)__ | __[WIKI](wiki/)__ | __[FAQs](FAQs.md)__ | __[Changelog](CHANGELOG.md)__ | __[Privacy](PRIVACY.md)__ | __[License](LICENSE.md)__ | __[Code of conduct](CODE_OF_CONDUCT.md)__
 
 ----
 
@@ -28,7 +22,7 @@ _More privacy features:_
 - Enable or disable Android-autofill.
 - Delete browser data (on app exit).
 - Choose between different search engines (or set a custom one).
-- FOSS Browser itself doesn't collect any data: [Privacy policy](https://codeberg.org/Gaukler_Faun/FOSS_Browser/src/branch/master/PRIVACY.md)
+- FOSS Browser itself doesn't collect any data: [Privacy policy](PRIVACY.md)
 
 
 ----

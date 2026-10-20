@@ -1,5 +1,4 @@
 „FOSS Browser“ ist ein völlig freier (wie in Freiheit) Open-Source-Android-Browser: datenschutzfreundlich, mit einer modernen Benutzeroberfläche. - Ihre Privatsphäre - Ihre Daten.
-<b>Projektseite mit weiteren Informationen: https://codeberg.org/Gaukler_Faun/FOSS_Browser</b>
 
 
 -------------------------------------------------
