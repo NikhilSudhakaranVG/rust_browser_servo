@@ -653,6 +653,12 @@ public class NinjaWebView extends FrameLayout implements AlbumController {
                     wv.clearSslPreferences();
                 } catch (Exception ignored) {}
             }
+            if (!BrowserContainer.hasIncognito()) {
+                try {
+                    android.webkit.CookieManager.getInstance().removeSessionCookies(null);
+                    android.webkit.CookieManager.getInstance().flush();
+                } catch (Exception ignored) {}
+            }
         }
         engine.onPause();
         engine.destroy();

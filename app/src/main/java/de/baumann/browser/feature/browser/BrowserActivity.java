@@ -995,6 +995,11 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
         FloatingActionButton fab_plus = findViewById(R.id.fab_plus);
         if (fab_plus != null) {
             fab_plus.setOnClickListener(v -> addAlbum(getString(R.string.home), BrowserUnit.URL_HOME, true));
+            fab_plus.setOnLongClickListener(v -> {
+                openIncognitoTab(BrowserUnit.URL_HOME);
+                NinjaToast.show(this, R.string.toast_incognito_opened);
+                return true;
+            });
         }
 
         fab_menu = findViewById(R.id.fab_menu);
@@ -1119,6 +1124,12 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
             return;
         }
 
+        if (ninjaWebView.isIncognito()) {
+            getWindow().addFlags(WindowManager.LayoutParams.FLAG_SECURE);
+        } else {
+            getWindow().clearFlags(WindowManager.LayoutParams.FLAG_SECURE);
+        }
+
         String url = ninjaWebView.getUrl();
         if (url != null) {
             ninjaWebView.initPreferences(url);
@@ -1149,17 +1160,30 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
         if (url != null && ninjaWebView.isForeground()) {
             progressBar.setVisibility(GONE);
             if (BrowserUnit.URL_HOME.equals(url) || "foss://home".equals(url)) {
-                appBar_title.setText(R.string.home);
-                ImageView menuIcon = findViewById(R.id.menu_icon);
-                if (menuIcon != null) menuIcon.setImageResource(R.drawable.icon_home_nav);
-                TextView overflowURL = findViewById(R.id.appbar_URL);
-                if (overflowURL != null) overflowURL.setText("");
+                if (ninjaWebView.isIncognito()) {
+                    appBar_title.setText(R.string.incognito_tab);
+                    ImageView menuIcon = findViewById(R.id.menu_icon);
+                    if (menuIcon != null) menuIcon.setImageResource(R.drawable.icon_incognito);
+                    TextView overflowURL = findViewById(R.id.appbar_URL);
+                    if (overflowURL != null) overflowURL.setText(getString(R.string.incognito_title));
+                } else {
+                    appBar_title.setText(R.string.home);
+                    ImageView menuIcon = findViewById(R.id.menu_icon);
+                    if (menuIcon != null) menuIcon.setImageResource(R.drawable.icon_home_nav);
+                    TextView overflowURL = findViewById(R.id.appbar_URL);
+                    if (overflowURL != null) overflowURL.setText("");
+                }
             } else {
                 setProfileIcon(fab_menu, url);
                 String title = ninjaWebView.getTitle();
                 if (title == null || title.isEmpty()) appBar_title.setText(url);
                 else appBar_title.setText(title);
-                FaviconHelper.setFavicon(context, contentView, url, R.id.menu_icon, R.drawable.icon_image_broken);
+                ImageView menuIcon = findViewById(R.id.menu_icon);
+                if (ninjaWebView.isIncognito()) {
+                    if (menuIcon != null) menuIcon.setImageResource(R.drawable.icon_incognito);
+                } else {
+                    FaviconHelper.setFavicon(context, contentView, url, R.id.menu_icon, R.drawable.icon_image_broken);
+                }
                 TextView overflowURL = findViewById(R.id.appbar_URL);
                 if (overflowURL != null) {
                     overflowURL.setText(url);
@@ -1253,6 +1277,27 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
     @Override
     public void openNewTab(String url) {
         addAlbum(getString(R.string.home), url, true);
+    }
+
+    @Override
+    public void openIncognitoTab(String url) {
+        addAlbum(getString(R.string.incognito_tab), url != null && !url.isEmpty() ? url : BrowserUnit.URL_HOME, true, true);
+    }
+
+    public void closeAllIncognitoTabs() {
+        List<AlbumController> toRemove = new ArrayList<>();
+        for (AlbumController controller : BrowserContainer.list()) {
+            if (controller.isIncognito()) {
+                toRemove.add(controller);
+            }
+        }
+        for (AlbumController controller : toRemove) {
+            removeAlbum(controller);
+        }
+        NinjaToast.show(this, R.string.incognito_closed_all);
+        if (BrowserContainer.size() < 1) {
+            addAlbum(getString(R.string.home), BrowserUnit.URL_HOME, true);
+        }
     }
 
     private void setSelectedTab() {
@@ -1419,6 +1464,8 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
                 item.setIconResId(R.drawable.icon_fav_plus);
             } else if (aktuellerTitel.equals(getString(R.string.home))) {
                 item.setIconResId(R.drawable.icon_home_nav);
+            } else if (aktuellerTitel.equals(getString(R.string.main_menu_new_tab_incognito))) {
+                item.setIconResId(R.drawable.icon_incognito);
             }
         }
 
@@ -1440,6 +1487,14 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
             } else if (resId == R.drawable.icon_tab_plus) {
                 if (hideMenu == 2) { dialog.cancel(); }
                 addAlbum(getString(R.string.home), BrowserUnit.URL_HOME, true);
+            } else if (resId == R.drawable.icon_incognito) {
+                if (hideMenu == 2) { dialog.cancel(); }
+                if (url != null && !url.isEmpty() && !url.equals(BrowserUnit.URL_HOME) && !url.equals("foss://home") && (hideMenu == 1 || hideMenu == 2 || hideMenu == 3 || hideMenu == 4)) {
+                    addAlbum(title != null && !title.isEmpty() ? title : getString(R.string.incognito_tab), url, true, true);
+                } else {
+                    addAlbum(getString(R.string.incognito_tab), BrowserUnit.URL_HOME, true, true);
+                }
+                NinjaToast.show(this, R.string.toast_incognito_opened);
             } else if (resId == R.drawable.icon_tab_background) {
                 addAlbum(HelperUnit.domain(url), url, false);
             } else if (resId == R.drawable.icon_refresh) {
@@ -2158,6 +2213,21 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
     }
     
     public void setProfileIcon (FloatingActionButton floatingActionButton, String url) {
+        if (currentAlbumController instanceof NinjaWebView nw && nw.isIncognito()) {
+            if (floatingActionButton != null) {
+                floatingActionButton.setImageResource(R.drawable.icon_incognito);
+                if (floatingActionButton.getDrawable() != null) {
+                    floatingActionButton.getDrawable().mutate().clearColorFilter();
+                }
+            }
+            if (fab_menu != null) {
+                fab_menu.setImageResource(R.drawable.icon_incognito);
+                if (fab_menu.getDrawable() != null) {
+                    fab_menu.getDrawable().mutate().clearColorFilter();
+                }
+            }
+            return;
+        }
         String profile = sp.getString("profile", "profileStandard");
         TypedValue typedValue = new TypedValue();
         Resources.Theme theme = context.getTheme();
@@ -2289,6 +2359,9 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
         for (int i = 0; i < BrowserContainer.size(); i++) {
             AlbumController controller = BrowserContainer.get(i);
             if (controller instanceof NinjaWebView webView) {
+                if (webView.isIncognito()) {
+                    continue;
+                }
                 String tabUrl = webView.getUrl();
                 if (tabUrl != null && !tabUrl.trim().isEmpty() && !"null".equalsIgnoreCase(tabUrl)) {
                     if (currentAlbumController == controller) {
@@ -2631,6 +2704,9 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
             case "32":
                 ninjaWebView.loadUrl(sp.getString("favoriteURL", BrowserUnit.URL_HOME));
                 break;
+            case "33":
+                openIncognitoTab(BrowserUnit.URL_HOME);
+                break;
         }
     }
 
@@ -2844,7 +2920,7 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
     }
 
     @SuppressLint("ClickableViewAccessibility")
-    private void setWebView(String title, final String url, final boolean foreground) {
+    private void setWebView(String title, final String url, final boolean foreground, final boolean incognito) {
 
         final int[] lastScrollY = {0};
         final Handler scrollHandler = new Handler(Looper.getMainLooper());
@@ -2868,6 +2944,7 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
         };
 
         ninjaWebView = new NinjaWebView(context);
+        ninjaWebView.setIncognito(incognito);
         ninjaWebView.setOnScrollChangeListener((v, scrollX, scrollY, oldScrollX, oldScrollY) -> {
             scrollHandler.removeCallbacks(scrollRunnable);
             lastScrollY[0] = oldScrollY;
@@ -2982,6 +3059,9 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
         }
 
         ninjaWebView.setBrowserController(this);
+        if (incognito && (title == null || title.equals(getString(R.string.home)))) {
+            title = getString(R.string.incognito_tab);
+        }
         ninjaWebView.setAlbumTitle(title, url);
 
         if (currentAlbumController != null) {
@@ -3015,7 +3095,11 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
     }
 
     private synchronized void addAlbum(String title, final String url, final boolean foreground) {
-        setWebView(title, url, foreground);
+        setWebView(title, url, foreground, false);
+    }
+
+    private synchronized void addAlbum(String title, final String url, final boolean foreground, final boolean incognito) {
+        setWebView(title, url, foreground, incognito);
     }
 
     private void triggerRebirth(Context context) {
