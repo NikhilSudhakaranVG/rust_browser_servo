@@ -30,6 +30,28 @@ import java.util.zip.ZipOutputStream;
 public class BackupUtils {
     private static final String TAG = "BackupUtils";
 
+    /**
+     * Validates that a zip entry name resolves to a path strictly within the specified base directory,
+     * preventing path traversal (Zip Slip vulnerability CWE-22).
+     */
+    public static boolean isEntrySafe(File baseDir, String entryName) {
+        if (baseDir == null || entryName == null || entryName.trim().isEmpty()) {
+            return false;
+        }
+        // Reject entries starting with slashes or containing drive letters
+        if (entryName.startsWith("/") || entryName.startsWith("\\") || entryName.contains(":")) {
+            return false;
+        }
+        try {
+            File targetFile = new File(baseDir, entryName);
+            String canonicalBase = baseDir.getCanonicalPath();
+            String canonicalTarget = targetFile.getCanonicalPath();
+            return canonicalTarget.startsWith(canonicalBase + File.separator) || canonicalTarget.equals(canonicalBase);
+        } catch (IOException e) {
+            return false;
+        }
+    }
+
     public static boolean backupAllData(Context context, Uri targetUri) {
         File appDataDir = context.getFilesDir().getParentFile();
         if (appDataDir == null || !appDataDir.exists()) {
@@ -76,6 +98,12 @@ public class BackupUtils {
                 while (entry != null) {
                     String entryName = entry.getName();
                     if (!entryName.isEmpty()) {
+                        if (!isEntrySafe(appDataDir, entryName)) {
+                            Log.w(TAG, "Skipping untrusted zip entry: " + entryName);
+                            zipIn.closeEntry();
+                            entry = zipIn.getNextEntry();
+                            continue;
+                        }
                         File outFile = new File(appDataDir, entryName);
                         if (entry.isDirectory()) {
                             Files.createDirectories(outFile.toPath());
@@ -143,6 +171,12 @@ public class BackupUtils {
                 while (entry != null) {
                     String entryName = entry.getName();
                     if (!entryName.isEmpty()) {
+                        if (!isEntrySafe(appDataDir, entryName)) {
+                            Log.w(TAG, "Skipping untrusted zip entry in db restore: " + entryName);
+                            zipIn.closeEntry();
+                            entry = zipIn.getNextEntry();
+                            continue;
+                        }
                         File outFile = new File(appDataDir, entryName);
                         if (entry.isDirectory()) {
                             // Erstellt das Verzeichnis (und alle Elternordner falls nötig)

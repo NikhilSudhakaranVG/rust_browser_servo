@@ -76,16 +76,19 @@ public class NinjaDownloadListener implements DownloadListener {
                     context, webView, null,
                     webView.getTitle(), d, downloadUrl,
                     R.drawable.icon_check, () -> {
+                        String quotedUrl = org.json.JSONObject.quote(downloadUrl);
+                        String quotedMime = org.json.JSONObject.quote(mimeType != null ? mimeType : "");
+                        String quotedName = org.json.JSONObject.quote(generatedFileName != null ? generatedFileName : "");
                         // FIX: fetch() nutzen anstatt XMLHttpRequest, um CORS/Same-Origin-Sperren zu umgehen
                         String jsCode = "javascript: (function() {" +
-                                "   fetch('" + downloadUrl + "')" +
+                                "   fetch(" + quotedUrl + ")" +
                                 "   .then(response => response.blob())" +
                                 "   .then(blob => {" +
                                 "       var reader = new FileReader();" +
                                 "       reader.onloadend = function() {" +
                                 "           var base64data = reader.result;" + // Enthält das komplette Data-URL Präfix
                                 "           if (window.AndroidInterface) {" +
-                                "               window.AndroidInterface.processBlob(base64data, '" + mimeType + "', '" + generatedFileName + "');" +
+                                "               window.AndroidInterface.processBlob(base64data, " + quotedMime + ", " + quotedName + ");" +
                                 "           }" +
                                 "       };" +
                                 "       reader.readAsDataURL(blob);" +

@@ -150,7 +150,7 @@ public class FaviconHelper extends SQLiteOpenHelper {
             //Background work here
             List<String> faviconURLs = getAllFaviconDomains();
             RecordAction action = new RecordAction(context);
-            List<Record> allEntries = action.listEntries((Activity) context);
+            List<Record> allEntries = action.listEntries(context);
             for (String faviconURL : faviconURLs) {
                 boolean found = false;
                 for (Record entry : allEntries) {

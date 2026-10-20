@@ -245,18 +245,19 @@ public class NinjaWebView extends FrameLayout implements AlbumController {
                         return;
                     }
                 }
-                // Show SSL error dialog
+                // Show SSL error dialog: default to cancel for security
                 new MaterialAlertDialogBuilder(context)
                         .setTitle(R.string.app_error)
-                        .setMessage("SSL Certificate Error: " + url)
+                        .setMessage("SSL Certificate Error: " + url + "\n\nWarning: The server's security certificate is not trusted. Continuing may compromise your privacy.")
                         .setCancelable(false)
-                        .setPositiveButton(R.string.app_ok, (d, w) -> handler.proceed())
-                        .setNegativeButton(R.string.app_cancel, (d, w) -> handler.cancel())
+                        .setPositiveButton(R.string.app_cancel, (d, w) -> handler.cancel())
+                        .setNegativeButton("Proceed anyway (Unsafe)", (d, w) -> handler.proceed())
                         .show();
             }
 
             @Override
             public boolean shouldOverrideUrlLoading(String url) {
+                if (url == null) return false;
                 // Handle internal dialog protocols injected by UrlProcessor
                 if (url.startsWith("internal://tracking-dialog")) {
                     handleTrackingDialog(url);
@@ -266,13 +267,37 @@ public class NinjaWebView extends FrameLayout implements AlbumController {
                     handleHttpDialog(url);
                     return true;
                 }
+                // Block navigation to dangerous schemes from web content
+                if (url.startsWith("file:") || url.startsWith("content:") || url.startsWith("javascript:")) {
+                    Log.w(TAG, "Blocked navigation to restricted scheme: " + url);
+                    return true;
+                }
+                // Securely handle intent: URIs
+                if (url.startsWith("intent:")) {
+                    try {
+                        Intent parsedIntent = Intent.parseUri(url, Intent.URI_INTENT_SCHEME);
+                        parsedIntent.addCategory(Intent.CATEGORY_BROWSABLE);
+                        parsedIntent.setComponent(null);
+                        parsedIntent.setSelector(null);
+                        if (context.getPackageManager().resolveActivity(parsedIntent, 0) != null) {
+                            parsedIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                            context.startActivity(parsedIntent);
+                        }
+                    } catch (Exception e) {
+                        Log.e(TAG, "Cannot launch intent URI: " + url, e);
+                    }
+                    return true;
+                }
                 // External app handling (tel:, mailto:, etc.)
                 if (!url.startsWith("http://") && !url.startsWith("https://")
                         && !url.startsWith("about:") && !url.startsWith("data:")) {
                     try {
                         Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+                        intent.addCategory(Intent.CATEGORY_BROWSABLE);
                         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                        context.startActivity(intent);
+                        if (context.getPackageManager().resolveActivity(intent, 0) != null) {
+                            context.startActivity(intent);
+                        }
                     } catch (Exception e) {
                         Log.e(TAG, "Cannot open URL: " + url);
                     }

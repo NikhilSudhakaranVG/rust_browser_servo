@@ -92,9 +92,11 @@ public class WebViewEngine implements BrowserEngine {
         settings.setSupportMultipleWindows(true);
         settings.setAllowFileAccess(true);
         settings.setAllowContentAccess(true);
+        settings.setAllowFileAccessFromFileURLs(false);
+        settings.setAllowUniversalAccessFromFileURLs(false);
         settings.setDefaultTextEncodingName("utf-8");
         settings.setSafeBrowsingEnabled(true);
-        settings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
+        settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
 
         webView.setVerticalScrollBarEnabled(true);
         webView.setHorizontalScrollBarEnabled(true);

@@ -2856,9 +2856,11 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
                     }
                     // HTML-Sonderzeichen maskieren
                     String escapedContent = formattedContent.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
+                    String escapedFileName = fileName.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;");
+                    String escapedDisplayPath = displayPath.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;");
                     String htmlWrapper = "<html><head>"
                             + "<meta name='viewport' content='width=device-width, initial-scale=1.0'>"
-                            + "<title>" + fileName + "</title>"
+                            + "<title>" + escapedFileName + "</title>"
                             + "<style>"
                             + "  body { margin: 0; padding: 15px; background: #fafafa; font-family: sans-serif; color: #333; }"
                             + "  .file-info { background: #eaeaea; padding: 10px; border-radius: 5px; font-size: 12px; margin-bottom: 15px; border-left: 4px solid #007bb6; word-break: break-all; }"
@@ -2866,8 +2868,8 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
                             + "  pre, code { font-family: monospace !important; font-size: 13px !important; white-space: pre-wrap !important; word-wrap: break-word !important; }"
                             + "</style></head><body>"
                             + "<div class='file-info'>"
-                            + "  <b>Datei:</b> " + fileName + "<br/>"
-                            + "  <b>Pfad:</b> " + displayPath
+                            + "  <b>Datei:</b> " + escapedFileName + "<br/>"
+                            + "  <b>Pfad:</b> " + escapedDisplayPath
                             + "</div>"
                             + "<pre class='" + langClass + "'><code class='" + langClass + "'>"
                             + escapedContent
@@ -2982,11 +2984,12 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
 
             if (type == WebView.HitTestResult.IMAGE_TYPE) {
                 String imageURL = result.getExtra();
+                String quotedUrl = org.json.JSONObject.quote(imageURL != null ? imageURL : "");
                 // Optimiertes JavaScript: Findet das Bild auch bei relativen Pfaden im HTML
                 String script = "javascript:(function() {" +
                         "var allImgs = document.getElementsByTagName('img');" +
                         "var targetImg = null;" +
-                        "var searchUrl = '" + imageURL + "';" +
+                        "var searchUrl = " + quotedUrl + ";" +
                         "for (var i = 0; i < allImgs.length; i++) {" +
                         "   if (allImgs[i].src === searchUrl || searchUrl.endsWith(allImgs[i].getAttribute('src'))) {" +
                         "       targetImg = allImgs[i];" +

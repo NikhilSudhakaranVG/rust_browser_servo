@@ -52,6 +52,9 @@ public class RecordAction {
         List<Record> list = new LinkedList<>();
         SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(context);
         String sortBy = Objects.requireNonNull(sp.getString("sort_bookmark", "title"));
+        String safeOrderBy = "time".equalsIgnoreCase(sortBy)
+                ? RecordUnit.COLUMN_TIME + " COLLATE NOCASE"
+                : RecordUnit.COLUMN_TITLE + " COLLATE NOCASE";
         Cursor cursor;
         cursor = database.query(
                 RecordUnit.TABLE_BOOKMARK,
@@ -64,7 +67,7 @@ public class RecordAction {
                 null,
                 null,
                 null,
-                sortBy + " COLLATE NOCASE;"
+                safeOrderBy
         );
         cursor.moveToFirst();
         while (!cursor.isAfterLast()) {
@@ -170,7 +173,7 @@ public class RecordAction {
         if (domain == null || domain.trim().isEmpty()) {
             return;
         }
-        database.execSQL("DELETE FROM " + table + " WHERE " + RecordUnit.COLUMN_DOMAIN + " = " + "\"" + domain.trim() + "\"");
+        database.delete(table, RecordUnit.COLUMN_DOMAIN + " = ?", new String[]{domain.trim()});
     }
 
     public List<String> listDomains(String table) {
@@ -216,7 +219,7 @@ public class RecordAction {
         if (domain == null || domain.trim().isEmpty()) {
             return;
         }
-        database.execSQL("DELETE FROM " + table + " WHERE " + RecordUnit.COLUMN_URL + " = " + "\"" + domain.trim() + "\"");
+        database.delete(table, RecordUnit.COLUMN_URL + " = ?", new String[]{domain.trim()});
     }
 
     public void clearTable(String table) {
@@ -238,12 +241,12 @@ public class RecordAction {
         return record;
     }
 
-    public List<Record> listEntries(Activity activity) {
+    public List<Record> listEntries(Context context) {
         List<Record> list = new ArrayList<>();
-        RecordAction action = new RecordAction(activity);
+        RecordAction action = new RecordAction(context);
         action.open(false);
-        list.addAll(action.listBookmark(activity, false, 0)); //move bookmarks to top of list
-        list.addAll(action.listHistory(activity.getApplicationContext()));
+        list.addAll(action.listBookmark(context, false, 0)); //move bookmarks to top of list
+        list.addAll(action.listHistory(context.getApplicationContext()));
         action.close();
         return list;
     }
