@@ -138,14 +138,6 @@
             android:gravity="center_vertical"
             app:icon="@drawable/icon_settings"/>
 
-        <Button
-            android:id="@+id/button_help"
-            style="@style/Widget.Material3.Button.IconButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            app:icon="@drawable/icon_help"/>
-
     </LinearLayout>
 
     <com.google.android.material.divider.MaterialDivider

@@ -6,7 +6,7 @@
     <PreferenceCategory android:title="@string/setting_title_ui">
 
         <EditTextPreference
-            android:defaultValue="https://codeberg.org/Gaukler_Faun/FOSS_Browser/wiki"
+            android:defaultValue="about:home"
             android:icon="@drawable/icon_fav"
             android:key="favoriteURL"
             android:title="@string/setting_title_fav" />

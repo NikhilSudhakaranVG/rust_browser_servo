@@ -108,18 +108,8 @@ public class Settings_Menu extends AppCompatActivity {
     }
 
     @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.menu_help, menu);
-        return super.onCreateOptionsMenu(menu);
-    }
-
-    @Override
     public boolean onOptionsItemSelected(android.view.MenuItem menuItem) {
         if (menuItem.getItemId() == android.R.id.home) finish();
-        else if (menuItem.getItemId() == R.id.menu_help) {
-            Uri webpage = Uri.parse("https://codeberg.org/Gaukler_Faun/FOSS_Browser/wiki/Menu");
-            BrowserUnit.intentURL(this, webpage);
-        }
         return true;
     }
 
