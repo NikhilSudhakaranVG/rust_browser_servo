@@ -3,47 +3,27 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "type": "kotlin",
+            "name": "Launch & Debug (Physical Device)",
+            "type": "android",
             "request": "launch",
-            "name": "Launch",
-            "projectRoot": "${workspaceFolder}",
-            "mainClass": "de.baumann.browser.main.MainActivityKt"
+            "target": "R9ZX205NJAK",
+            "appSrcRoot": "${workspaceFolder}/app/src/main",
+            "apkFile": "${workspaceFolder}/app/build/outputs/apk/debug/app-debug.apk",
+            "preLaunchTask": "Assemble Debug APK"
         },
         {
-            "type": "kotlin",
-            "request": "launch",
-            "name": "Attach",
-            "projectRoot": "${workspaceFolder}",
-            "deviceId": "emulator-5554"
-        },
-        {
-            "type": "gradle",
-            "request": "launch",
-            "name": "Run app",
-            "task": "installDebug"
-        },
-        {
-            "type": "java",
-            "name": "Debug (Launch) - MainActivityKt",
-            "request": "launch",
-            "cwd": "${workspaceFolder}",
-            "console": "internalConsole",
-            "stopOnEntry": false,
-            "mainClass": "de.baumann.browser.main.MainActivityKt",
-            "projectName": "app"
-        },
-        {
-            "name": "Attach to Chrome",
-            "port": 9222,
-            "request": "attach",
-            "type": "chrome",
-            "webRoot": "${workspaceFolder}"
-        },
-        {
+            "name": "Attach Debugger (Physical Device)",
             "type": "android",
             "request": "attach",
-            "name": "Connect to running instance",
-            "deviceId": "emulator-5554"
+            "target": "R9ZX205NJAK",
+            "processId": "de.baumann.browser"
+        },
+        {
+            "name": "Inspect WebView (Chrome DevTools)",
+            "type": "chrome",
+            "request": "attach",
+            "port": 9222,
+            "webRoot": "${workspaceFolder}"
         }
     ]
 }

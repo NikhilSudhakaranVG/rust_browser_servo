@@ -4,7 +4,7 @@
         {
             "label": "Install & Run on Device",
             "type": "shell",
-            "command": ".\\gradlew installDebug && adb shell am start -n de.baumann.browser/de.baumann.browser.feature.browser.BrowserActivity",
+            "command": ".\\gradlew installDebug && adb -d shell am start -n de.baumann.browser/de.baumann.browser.feature.browser.BrowserActivity",
             "group": {
                 "kind": "build",
                 "isDefault": true
@@ -29,10 +29,20 @@
         {
             "label": "Launch App on Device",
             "type": "shell",
-            "command": "adb shell am start -n de.baumann.browser/de.baumann.browser.feature.browser.BrowserActivity",
+            "command": "adb -d shell am start -n de.baumann.browser/de.baumann.browser.feature.browser.BrowserActivity",
             "presentation": {
                 "reveal": "always",
                 "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "View Device Logcat",
+            "type": "shell",
+            "command": "adb -d logcat -s browser:V AndroidRuntime:E",
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
             },
             "problemMatcher": []
         }
