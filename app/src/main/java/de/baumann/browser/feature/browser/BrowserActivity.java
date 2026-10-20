@@ -2892,7 +2892,12 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
             showAlbum(ninjaWebView);
         }
         View albumView = ninjaWebView.getAlbumView();
-        tab_container.addView(albumView, WRAP_CONTENT, WRAP_CONTENT);
+        if (albumView != null) {
+            if (albumView.getParent() != null) {
+                ((ViewGroup) albumView.getParent()).removeView(albumView);
+            }
+            tab_container.addView(albumView, WRAP_CONTENT, WRAP_CONTENT);
+        }
         updateOmniBox();
     }
 

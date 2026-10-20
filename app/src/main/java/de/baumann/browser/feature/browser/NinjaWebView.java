@@ -402,6 +402,11 @@ public class NinjaWebView extends FrameLayout implements AlbumController {
                     ViewGroup.LayoutParams.MATCH_PARENT,
                     ViewGroup.LayoutParams.MATCH_PARENT);
             addView(homePageView, lp);
+        } else if (homePageView.getParent() == null) {
+            FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT);
+            addView(homePageView, lp);
         }
         homePageView.setVisibility(View.VISIBLE);
         homePageView.refreshShortcuts();
@@ -588,6 +593,7 @@ public class NinjaWebView extends FrameLayout implements AlbumController {
         engine.onPause();
         engine.destroy();
         removeAllViews();
+        homePageView = null;
     }
 
     public void onPause()  { engine.onPause();  }
