@@ -575,11 +575,15 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
             progressBar.setVisibility(VISIBLE);
         } else {
             progressBar.setVisibility(GONE);
-            final Handler handler = new Handler(Looper.getMainLooper());
-            handler.postDelayed(() ->
-                            FaviconHelper.setFavicon(context, contentView, ninjaWebView.getUrl(), R.id.menu_icon, R.drawable.icon_image_broken),
-                    500
-            );}
+            if (ninjaWebView != null && ninjaWebView.getUrl() != null) {
+                final Handler handler = new Handler(Looper.getMainLooper());
+                handler.postDelayed(() -> {
+                    if (ninjaWebView != null && ninjaWebView.getUrl() != null) {
+                        FaviconHelper.setFavicon(context, contentView, ninjaWebView.getUrl(), R.id.menu_icon, R.drawable.icon_image_broken);
+                    }
+                }, 500);
+            }
+        }
     }
 
     @Override
@@ -1057,9 +1061,17 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
         BadgeUtils.attachBadgeDrawable(badgeDrawable, fab_overview);
         bottom_navigation.getOrCreateBadge(R.id.page_0).setNumber(BrowserContainer.size());
 
+        if (currentAlbumController == null) {
+            return;
+        }
         ninjaWebView = (NinjaWebView) currentAlbumController;
+        if (ninjaWebView == null) {
+            return;
+        }
         String url = ninjaWebView.getUrl();
-        ninjaWebView.initPreferences(url);
+        if (url != null) {
+            ninjaWebView.initPreferences(url);
+        }
         saveOpenedTabs();
 
         if (url != null && ninjaWebView.isForeground()) {
@@ -1067,17 +1079,20 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
             if (BrowserUnit.URL_HOME.equals(url) || "foss://home".equals(url)) {
                 appBar_title.setText(R.string.home);
                 ImageView menuIcon = findViewById(R.id.menu_icon);
-                menuIcon.setImageResource(R.drawable.icon_home_nav);
+                if (menuIcon != null) menuIcon.setImageResource(R.drawable.icon_home_nav);
                 TextView overflowURL = findViewById(R.id.appbar_URL);
-                overflowURL.setText("");
+                if (overflowURL != null) overflowURL.setText("");
             } else {
                 setProfileIcon(fab_menu, url);
-                if (Objects.requireNonNull(ninjaWebView.getTitle()).isEmpty()) appBar_title.setText(url);
-                else appBar_title.setText(ninjaWebView.getTitle());
+                String title = ninjaWebView.getTitle();
+                if (title == null || title.isEmpty()) appBar_title.setText(url);
+                else appBar_title.setText(title);
                 FaviconHelper.setFavicon(context, contentView, url, R.id.menu_icon, R.drawable.icon_image_broken);
                 TextView overflowURL = findViewById(R.id.appbar_URL);
-                overflowURL.setText(url);
-                HelperUnit.setHighLightedText(context, overflowURL, url, HelperUnit.domain(url));
+                if (overflowURL != null) {
+                    overflowURL.setText(url);
+                    HelperUnit.setHighLightedText(context, overflowURL, url, HelperUnit.domain(url));
+                }
             }
         }
     }
@@ -2078,8 +2093,12 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
         }
         listStandard = new List_standard(context);
         if (listStandard.isWhite(url)) {
-            floatingActionButton.getDrawable().mutate().setTint(color);
-            fab_menu.getDrawable().mutate().setTint(color);
+            if (floatingActionButton != null && floatingActionButton.getDrawable() != null) {
+                floatingActionButton.getDrawable().mutate().setTint(color);
+            }
+            if (fab_menu != null && fab_menu.getDrawable() != null) {
+                fab_menu.getDrawable().mutate().setTint(color);
+            }
         }
     }
 
@@ -2872,9 +2891,6 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
         ninjaWebView.setBrowserController(this);
         ninjaWebView.setAlbumTitle(title, url);
 
-        if (url.isEmpty()) ninjaWebView.loadUrl("about:blank");
-        else ninjaWebView.loadUrl(url);
-
         if (currentAlbumController != null) {
             ninjaWebView.setPredecessor(currentAlbumController);
             //save currentAlbumController and use when TAB is closed via Back button
@@ -2898,6 +2914,10 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
             }
             tab_container.addView(albumView, WRAP_CONTENT, WRAP_CONTENT);
         }
+
+        if (url.isEmpty()) ninjaWebView.loadUrl("about:blank");
+        else ninjaWebView.loadUrl(url);
+
         updateOmniBox();
     }
 

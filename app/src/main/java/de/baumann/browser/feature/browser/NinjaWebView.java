@@ -415,9 +415,11 @@ public class NinjaWebView extends FrameLayout implements AlbumController {
         if (album != null) {
             album.setAlbumTitle(context.getString(R.string.home), BrowserUnit.URL_HOME);
         }
-        if (browserController != null) {
-            browserController.updateProgress(BrowserUnit.LOADING_STOPPED);
-        }
+        post(() -> {
+            if (browserController != null) {
+                browserController.updateProgress(BrowserUnit.LOADING_STOPPED);
+            }
+        });
     }
 
     private void hideHomePage() {
