@@ -12,13 +12,13 @@ __[README](https://codeberg.org/Gaukler_Faun/FOSS_Browser/src/branch/master/READ
 
 ----
 
-FOSS Browser is an Android application to browse through the internet. It uses the Android webview to render websites and has no advanced render engine like  normal  browsers.
+FOSS Browser is a privacy-focused, open-source Android web browser optimized for one-handed use. It features a modern, pluggable engine architecture supporting both the standard Android System WebView and experimental integration with the next-generation, Rust-powered [Servo browser engine](https://servo.org/).
 
 ----
 
 ### Privacy
 
-FOSS Browser can save settings fot each domain to protect your privacy. For each domain you can enable or disable: AdBlock, JavaScript, cookies, fingerprint protection and much more. For non saved domains you can edit a standard profile to your needs.
+FOSS Browser can save settings for each domain to protect your privacy. For each domain you can enable or disable: AdBlock, JavaScript, cookies, fingerprint protection and much more. For non saved domains you can edit a standard profile to your needs.
 
 _More privacy features:_
 
@@ -57,6 +57,32 @@ You can assign nearly twenty different gestures to the toolbar and the toolbar b
 ### Backups
 
 Backup all your important data and settings (bookmarks, history, websites-settings and so on) on your SD-card. You can also back up FOSS Browser settings. Backups can even be restored on a fresh install or another device (if you copy the backup files to the new device).
+
+----
+### Pluggable Rendering Engines (Servo & WebView)
+
+FOSS Browser decouples UI controls from the underlying rendering engine using a modular abstraction layer:
+
+- **Android System WebView**: Default, production-tested engine leveraging the system WebKit/Blink implementation.
+- **Servo Web Engine (Experimental)**: An independent, embeddable web engine written in Rust, utilizing parallel layout and rendering via OpenGL ES.
+- **Runtime Switching**: Switch engines on demand via Developer Options (`pref_use_servo`).
+- For developer guides, architecture details, and how to activate Servo with the AAR binary, see [AGENT_REFERENCE.md](AGENT_REFERENCE.md) and [servoview-local/README.md](servoview-local/README.md).
+
+----
+### Building from Source
+
+Prerequisites: Android SDK (API 29–37), JDK 17.
+
+```bash
+# Compile and check Java code
+./gradlew compileDebugJavaWithJavac
+
+# Build Debug APK (output in app/build/outputs/apk/debug/app-debug.apk)
+./gradlew assembleDebug
+
+# Install to connected device
+./gradlew installDebug
+```
 
 ----
 
