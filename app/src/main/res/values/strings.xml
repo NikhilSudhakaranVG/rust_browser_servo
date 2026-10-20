@@ -71,6 +71,10 @@
     <string name="setting_label">Settings</string>
     <string name="setting_title_deny_cookie_banners">Cookie Banner Blocker</string>
     <string name="setting_title_browser">Browser Settings</string>
+    <string name="setting_title_browser_engine">Web rendering engine</string>
+    <string name="setting_summary_browser_engine">Choose between standard Android WebView and experimental Servo engine</string>
+    <string name="setting_engine_webview">Android System WebView (Default)</string>
+    <string name="setting_engine_servo">Servo Web Engine (Experimental)</string>
     <string name="setting_title_search_engine">Search engine</string>
     <string name="setting_title_trackingURL">Tracking-URL popup</string>
     <string name="setting_title_font">Font size</string>

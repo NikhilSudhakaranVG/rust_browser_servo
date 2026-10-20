@@ -57,7 +57,7 @@ FOSS Browser decouples UI controls from the underlying rendering engine using a 
 
 - **Android System WebView**: Default, production-tested engine leveraging the system WebKit/Blink implementation.
 - **Servo Web Engine (Experimental)**: An independent, embeddable web engine written in Rust, utilizing parallel layout and rendering via OpenGL ES.
-- **Runtime Switching**: Switch engines on demand via Developer Options (`pref_use_servo`).
+- **User Switching**: Choose between Android System WebView and Servo directly in the settings page (**Settings > Browser Settings > Web rendering engine**).
 - For developer guides, architecture details, and how to activate Servo with the AAR binary, see [AGENT_REFERENCE.md](AGENT_REFERENCE.md) and [servoview-local/README.md](servoview-local/README.md).
 
 ----

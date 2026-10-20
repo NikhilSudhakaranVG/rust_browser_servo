@@ -2,6 +2,17 @@
 
 <resources>
 
+    <!-- Browser Engine -->
+    <string-array name="setting_entries_browser_engine">
+        <item>@string/setting_engine_webview</item>
+        <item>@string/setting_engine_servo</item>
+    </string-array>
+
+    <string-array name="setting_values_browser_engine">
+        <item>webview</item>
+        <item>servo</item>
+    </string-array>
+
     <!-- Search engine -->
     <string-array name="setting_entries_search_engine">
         <item>Startpage</item>

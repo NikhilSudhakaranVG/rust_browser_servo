@@ -85,6 +85,13 @@
             android:title="@string/setting_title_savedWebSites" />
 
         <ListPreference
+            android:defaultValue="webview"
+            android:entries="@array/setting_entries_browser_engine"
+            android:entryValues="@array/setting_values_browser_engine"
+            android:key="pref_browser_engine"
+            android:title="@string/setting_title_browser_engine" />
+
+        <ListPreference
             android:defaultValue="0"
             android:entries="@array/setting_entries_search_engine"
             android:entryValues="@array/setting_values_search_engine"

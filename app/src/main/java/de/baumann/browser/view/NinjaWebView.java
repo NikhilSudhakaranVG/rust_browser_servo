@@ -77,8 +77,13 @@ import de.baumann.browser.unit.HelperUnit;
  */
 public class NinjaWebView extends FrameLayout implements AlbumController {
 
-    // ── Engine-selection preference key ───────────────────────────────────
-    /** SharedPreference key — set to {@code true} to activate Servo. */
+    // ── Engine-selection preference keys ───────────────────────────────────
+    /** SharedPreference key for engine selection: {@link #ENGINE_WEBVIEW} or {@link #ENGINE_SERVO}. */
+    public static final String PREF_BROWSER_ENGINE = "pref_browser_engine";
+    public static final String ENGINE_WEBVIEW = "webview";
+    public static final String ENGINE_SERVO = "servo";
+
+    /** SharedPreference legacy boolean flag — set to {@code true} to activate Servo. */
     public static final String PREF_USE_SERVO = "pref_use_servo";
 
     // ── Fields ─────────────────────────────────────────────────────────────
@@ -125,7 +130,13 @@ public class NinjaWebView extends FrameLayout implements AlbumController {
 
     private static BrowserEngine buildEngine(Context context) {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
-        boolean useServo = prefs.getBoolean(PREF_USE_SERVO, false);
+        String engineChoice = prefs.getString(PREF_BROWSER_ENGINE, null);
+        boolean useServo;
+        if (engineChoice != null) {
+            useServo = ENGINE_SERVO.equalsIgnoreCase(engineChoice);
+        } else {
+            useServo = prefs.getBoolean(PREF_USE_SERVO, false);
+        }
         if (useServo) {
             Log.i(TAG, "NinjaWebView: using ServoEngine");
             return new ServoEngine(context);

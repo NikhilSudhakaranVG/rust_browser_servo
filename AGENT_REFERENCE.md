@@ -133,8 +133,9 @@ When you are ready to test with the live Servo binary:
 4. **Uncomment Servo Imports in `ServoEngine.java`**:
    - Search for `[SERVO_ACTIVE]` in `ServoEngine.java` and uncomment the `ServoView` initialization and callback mappings.
 5. **Toggle Engine at Runtime**:
-   - Set preference `pref_use_servo` to `true` in `SharedPreferences`.
-   - In the app UI: Go to Settings → tap Version 7 times to toggle Developer Mode.
+   - In the app UI: Go to **Settings > Browser Settings > Web rendering engine** (`pref_browser_engine`).
+   - Select either **Android System WebView (Default)** or **Servo Web Engine (Experimental)**.
+   - The selection automatically keeps the legacy `pref_use_servo` boolean in sync and sets `restart_changed = 1` so the browser cleanly restarts on return with the chosen engine.
 
 ---
 

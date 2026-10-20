@@ -54,6 +54,10 @@
     <string name="dialog_sortDate">Nach Datum sortieren</string>
     <string name="setting_label">Einstellungen</string>
     <string name="setting_title_browser">Browser-Einstellungen</string>
+    <string name="setting_title_browser_engine">Web-Rendering-Engine</string>
+    <string name="setting_summary_browser_engine">Wählen Sie zwischen standardmäßigem Android WebView und experimenteller Servo-Engine</string>
+    <string name="setting_engine_webview">Android System WebView (Standard)</string>
+    <string name="setting_engine_servo">Servo Web-Engine (Experimentell)</string>
     <string name="setting_title_search_engine">Suchmaschine</string>
     <string name="setting_title_font">Schriftgröße</string>
     <string name="setting_title_dom">DOM-Speicher</string>

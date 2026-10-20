@@ -16,6 +16,7 @@ import de.baumann.browser.R;
 import de.baumann.browser.activity.*;
 import de.baumann.browser.browser.AdBlock;
 import de.baumann.browser.preferences.BasePreferenceFragment;
+import de.baumann.browser.view.NinjaWebView;
 
 public class Fragment_settings extends BasePreferenceFragment implements SharedPreferences.OnSharedPreferenceChangeListener {
 
@@ -27,6 +28,12 @@ public class Fragment_settings extends BasePreferenceFragment implements SharedP
         setPreferencesFromResource(R.xml.preference_setting, rootKey);
         Context context = requireContext();
         sp = PreferenceManager.getDefaultSharedPreferences(context);
+
+        ListPreference enginePref = findPreference(NinjaWebView.PREF_BROWSER_ENGINE);
+        if (enginePref != null && !sp.contains(NinjaWebView.PREF_BROWSER_ENGINE)) {
+            boolean useServo = sp.getBoolean(NinjaWebView.PREF_USE_SERVO, false);
+            enginePref.setValue(useServo ? NinjaWebView.ENGINE_SERVO : NinjaWebView.ENGINE_WEBVIEW);
+        }
 
         initSummary(getPreferenceScreen());
 
@@ -99,6 +106,13 @@ public class Fragment_settings extends BasePreferenceFragment implements SharedP
         if (key.equals("sp_theme") || key.equals("useDynamicColor")) {
             sp.edit().putInt("restart_changed", 1).apply();
             updatePrefSummary(findPreference(key));
+        }
+        if (key.equals(NinjaWebView.PREF_BROWSER_ENGINE)) {
+            String engine = sharedPreferences.getString(NinjaWebView.PREF_BROWSER_ENGINE, NinjaWebView.ENGINE_WEBVIEW);
+            sp.edit()
+                    .putBoolean(NinjaWebView.PREF_USE_SERVO, NinjaWebView.ENGINE_SERVO.equals(engine))
+                    .putInt("restart_changed", 1)
+                    .apply();
         }
     }
 
