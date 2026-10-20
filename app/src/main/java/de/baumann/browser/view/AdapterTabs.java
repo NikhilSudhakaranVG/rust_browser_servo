@@ -26,6 +26,7 @@ public class AdapterTabs {
     private TextView albumUrl;
     private BrowserController browserController;
     private MaterialCardView albumCardView;
+    private boolean foreground = false;
 
     AdapterTabs(Context context, AlbumController albumController, BrowserController browserController) {
         this.context = context;
@@ -37,6 +38,12 @@ public class AdapterTabs {
     View getAlbumView() {
         return albumView;
     }
+
+    /** Returns true if this tab is currently the foreground (active) tab. */
+    public boolean isForeground() {
+        return foreground;
+    }
+
     public Object getUrl() {
         return albumUrl.getText().toString();
     }
@@ -74,6 +81,7 @@ public class AdapterTabs {
     }
 
     public void activate() {
+        foreground = true;
         TypedValue typedValue = new TypedValue();
         context.getTheme().resolveAttribute(com.google.android.material.R.attr.colorPrimaryInverse, typedValue, true);
         int color = typedValue.data;
@@ -87,6 +95,7 @@ public class AdapterTabs {
     }
 
     void deactivate() {
+        foreground = false;
         TypedValue typedValue = new TypedValue();
         context.getTheme().resolveAttribute(com.google.android.material.R.attr.colorSurfaceContainerHighest, typedValue, true);
         int color = typedValue.data;

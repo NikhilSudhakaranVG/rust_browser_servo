@@ -8,16 +8,16 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
+import android.net.Uri;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
-import android.webkit.CookieManager;
-import android.webkit.WebBackForwardList;
-import android.webkit.WebHistoryItem;
-import android.webkit.WebSettings;
-import android.webkit.WebView;
+import android.webkit.ValueCallback;
+import android.webkit.WebChromeClient;
 import android.widget.Button;
+import android.widget.FrameLayout;
 import android.widget.GridView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -27,14 +27,11 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.cardview.widget.CardView;
 import androidx.preference.PreferenceManager;
-import androidx.webkit.WebSettingsCompat;
-import androidx.webkit.WebViewFeature;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.textfield.TextInputEditText;
 
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
@@ -43,174 +40,437 @@ import de.baumann.browser.R;
 import de.baumann.browser.browser.AlbumController;
 import de.baumann.browser.browser.BrowserController;
 import de.baumann.browser.browser.List_standard;
-import de.baumann.browser.browser.NinjaDownloadListener;
-import de.baumann.browser.browser.NinjaWebChromeClient;
-import de.baumann.browser.browser.NinjaWebViewClient;
-import de.baumann.browser.browser.WebAppInterface;
+import de.baumann.browser.browser.engine.BrowserEngine;
+import de.baumann.browser.browser.engine.BrowserEngineClient;
+import de.baumann.browser.browser.engine.ServoEngine;
+import de.baumann.browser.browser.engine.UrlProcessor;
+import de.baumann.browser.browser.engine.WebViewEngine;
 import de.baumann.browser.database.FaviconHelper;
 import de.baumann.browser.database.Record;
 import de.baumann.browser.database.RecordAction;
 import de.baumann.browser.unit.BrowserUnit;
 import de.baumann.browser.unit.HelperUnit;
 
-public class NinjaWebView extends WebView implements AlbumController {
+/**
+ * Primary browser content view — now a {@link FrameLayout} that hosts a
+ * {@link BrowserEngine} rather than extending {@link android.webkit.WebView}
+ * directly.
+ *
+ * <p>This approach (composition over inheritance) allows the active rendering
+ * engine ({@link WebViewEngine} or {@link ServoEngine}) to be swapped at
+ * runtime without changing any of the surrounding UI code.</p>
+ *
+ * <h3>Engine selection</h3>
+ * <p>The engine is chosen based on the {@code pref_use_servo} SharedPreference
+ * (default {@code false}). It can be toggled in Settings → About by tapping
+ * the version number 7 times.</p>
+ *
+ * <h3>Invariant</h3>
+ * <p>All callers must use the public methods declared here. Direct access to
+ * the underlying engine via {@link #getEngine()} should be avoided except for
+ * operations not yet exposed by this wrapper.</p>
+ */
+public class NinjaWebView extends FrameLayout implements AlbumController {
 
+    // ── Engine-selection preference key ───────────────────────────────────
+    /** SharedPreference key — set to {@code true} to activate Servo. */
+    public static final String PREF_USE_SERVO = "pref_use_servo";
+
+    // ── Fields ─────────────────────────────────────────────────────────────
     public boolean fingerPrintProtection;
     public boolean history;
     public boolean adBlock;
     public boolean saveData;
     public boolean camera;
-    private Context context;
+
+    private final Context context;
     private boolean stopped;
     private AdapterTabs album;
     private AlbumController predecessor = null;
-    private NinjaWebViewClient webViewClient;
-    private NinjaWebChromeClient webChromeClient;
-    private NinjaDownloadListener downloadListener;
-    private static String profile;
-    private List_standard listStandard;
-    private Bitmap favicon;
-    private static SharedPreferences sp;
-    private boolean foreground;
     private static BrowserController browserController = null;
+    private static SharedPreferences sp;
+
+    /** The active rendering engine — WebView or Servo. */
+    private final BrowserEngine engine;
+
+    // ── Constructors ──────────────────────────────────────────────────────
 
     public NinjaWebView(Context context, AttributeSet attrs) {
         super(context, attrs);
+        this.context = context;
+        this.engine = buildEngine(context);
+        init();
     }
 
     public NinjaWebView(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
+        this.context = context;
+        this.engine = buildEngine(context);
+        init();
     }
 
     public NinjaWebView(Context context) {
         super(context);
-        sp = PreferenceManager.getDefaultSharedPreferences(context);
-        String profile = sp.getString("profile", "standard");
         this.context = context;
-        this.foreground = false;
-        this.fingerPrintProtection = sp.getBoolean(profile + "_fingerPrintProtection", true);
-        this.history = sp.getBoolean(profile + "_history", true);
-        this.adBlock = sp.getBoolean(profile + "_adBlock", false);
-        this.saveData = sp.getBoolean(profile + "_saveData", false);
-        this.camera = sp.getBoolean(profile + "_camera", false);
+        this.engine = buildEngine(context);
+        init();
+    }
+
+    // ── Factory ───────────────────────────────────────────────────────────
+
+    private static BrowserEngine buildEngine(Context context) {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+        boolean useServo = prefs.getBoolean(PREF_USE_SERVO, false);
+        if (useServo) {
+            Log.i(TAG, "NinjaWebView: using ServoEngine");
+            return new ServoEngine(context);
+        } else {
+            Log.i(TAG, "NinjaWebView: using WebViewEngine");
+            return new WebViewEngine(context);
+        }
+    }
+
+    // ── Initialisation ────────────────────────────────────────────────────
+
+    private void init() {
+        sp = PreferenceManager.getDefaultSharedPreferences(context);
+        String profile = sp.getString("profile", "profileStandard");
 
         this.stopped = false;
-        this.listStandard = new List_standard(this.context);
-        this.album = new AdapterTabs(this.context, this, browserController);
-        this.webViewClient = new NinjaWebViewClient(this);
-        this.webChromeClient = new NinjaWebChromeClient(this);
-        this.downloadListener = new NinjaDownloadListener( this);
+        this.fingerPrintProtection = sp.getBoolean(profile + "_fingerPrintProtection", true);
+        this.history               = sp.getBoolean(profile + "_history", true);
+        this.adBlock               = sp.getBoolean(profile + "_adBlock", false);
+        this.saveData              = sp.getBoolean(profile + "_saveData", false);
+        this.camera                = sp.getBoolean(profile + "_camera", false);
 
-        initWebView();
-        initAlbum();
+        // Add the engine view to our layout
+        FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT);
+        addView(engine.getView(), lp);
+
+        // Wire up the engine callback
+        engine.setClient(buildEngineClient());
+
+        // Initialise tab thumbnail adapter
+        this.album = new AdapterTabs(context, this, browserController);
+        album.setBrowserController(browserController);
+    }
+
+    // ── Engine client (BrowserEngineClient impl) ──────────────────────────
+
+    private BrowserEngineClient buildEngineClient() {
+        return new BrowserEngineClient() {
+
+            @Override
+            public void onPageStarted(String url) {
+                stopped = false;
+                if (isForeground() && browserController != null)
+                    browserController.updateProgress(0);
+            }
+
+            @Override
+            public void onPageFinished(String url, String title) {
+                if (isForeground() && !stopped && browserController != null)
+                    browserController.updateProgress(BrowserUnit.LOADING_STOPPED);
+                album.setAlbumTitle(title, url);
+                // Save history
+                if (history && url != null && !url.equals("about:blank")) {
+                    RecordAction action = new RecordAction(context);
+                    action.open(true);
+                    action.addHistory(new Record(title, url, 0, 0));
+                    action.close();
+                }
+                // Save favicon
+                Bitmap favicon = engine.getFavicon();
+                if (favicon != null && url != null) {
+                    FaviconHelper faviconHelper = new FaviconHelper(context);
+                    faviconHelper.addFavicon(context, url, favicon);
+                }
+                updateFavicon(url);
+            }
+
+            @Override
+            public void onProgressChanged(int progress) {
+                if (isForeground() && !stopped && browserController != null)
+                    browserController.updateProgress(progress);
+            }
+
+            @Override
+            public void onTitleChanged(String title, String url) {
+                album.setAlbumTitle(title, url);
+            }
+
+            @Override
+            public void onFaviconReceived(Bitmap icon, String url) {
+                updateFavicon(url);
+            }
+
+            @Override
+            public void onReceivedError(int errorCode, String description, String url) {
+                Log.e(TAG, "Engine error " + errorCode + " at " + url + ": " + description);
+            }
+
+            @Override
+            public void onSslError(String url, BrowserEngineClient.SslErrorHandler handler) {
+                // Show the same SSL error dialog as before
+                new MaterialAlertDialogBuilder(context)
+                        .setTitle(R.string.dialog_title_warning)
+                        .setMessage(context.getString(R.string.dialog_content_warning_ssl))
+                        .setCancelable(false)
+                        .setPositiveButton(R.string.app_ok, (d, w) -> handler.proceed())
+                        .setNegativeButton(R.string.app_cancel, (d, w) -> handler.cancel())
+                        .show();
+            }
+
+            @Override
+            public boolean shouldOverrideUrlLoading(String url) {
+                // Handle internal dialog protocols injected by UrlProcessor
+                if (url.startsWith("internal://tracking-dialog")) {
+                    handleTrackingDialog(url);
+                    return true;
+                }
+                if (url.startsWith("internal://http-dialog")) {
+                    handleHttpDialog(url);
+                    return true;
+                }
+                // External app handling (tel:, mailto:, etc.)
+                if (!url.startsWith("http://") && !url.startsWith("https://")
+                        && !url.startsWith("about:") && !url.startsWith("data:")) {
+                    try {
+                        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                        context.startActivity(intent);
+                    } catch (Exception e) {
+                        Log.e(TAG, "Cannot open URL: " + url);
+                    }
+                    return true;
+                }
+                return false;
+            }
+
+            @Override
+            public boolean shouldBlockRequest(String url) {
+                return false; // Ad blocking is handled inside WebViewEngine directly
+            }
+
+            @Override
+            public void onDownloadRequested(String url, String contentDisposition,
+                    String mimeType, long contentLength) {
+                // Delegate to existing NinjaDownloadListener logic via BrowserUnit
+                BrowserUnit.download(context, url, contentDisposition, mimeType);
+            }
+
+            @Override
+            public void onJsAlert(String message, Runnable confirm) {
+                new MaterialAlertDialogBuilder(context)
+                        .setMessage(message)
+                        .setCancelable(false)
+                        .setPositiveButton(android.R.string.ok, (d, w) -> confirm.run())
+                        .show();
+            }
+
+            @Override
+            public void onJsConfirm(String message, Runnable confirm, Runnable cancel) {
+                new MaterialAlertDialogBuilder(context)
+                        .setMessage(message)
+                        .setCancelable(false)
+                        .setPositiveButton(android.R.string.ok, (d, w) -> confirm.run())
+                        .setNegativeButton(android.R.string.cancel, (d, w) -> cancel.run())
+                        .show();
+            }
+
+            @Override
+            public void onJsPrompt(String message, String defaultValue,
+                    BrowserEngineClient.PromptResult result) {
+                final TextInputEditText input = new TextInputEditText(context);
+                input.setText(defaultValue);
+                new MaterialAlertDialogBuilder(context)
+                        .setMessage(message)
+                        .setView(input)
+                        .setCancelable(false)
+                        .setPositiveButton(android.R.string.ok,
+                                (d, w) -> result.accept(Objects.requireNonNull(
+                                        input.getText()).toString()))
+                        .setNegativeButton(android.R.string.cancel, (d, w) -> result.cancel())
+                        .show();
+            }
+
+            @Override
+            public void onPermissionRequest(String resource, String origin,
+                    Runnable grant, Runnable deny) {
+                // Auto-grant based on profile settings (camera, location, mic)
+                SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+                String profile = prefs.getString("profile", "profileStandard");
+                boolean shouldGrant = false;
+                switch (resource) {
+                    case "camera":       shouldGrant = prefs.getBoolean(profile + "_camera", false); break;
+                    case "microphone":   shouldGrant = prefs.getBoolean(profile + "_microphone", false); break;
+                    case "geolocation":  shouldGrant = prefs.getBoolean(profile + "_location", false); break;
+                }
+                if (shouldGrant) grant.run(); else deny.run();
+            }
+
+            @Override
+            public void onShowCustomView(View view, WebChromeClient.CustomViewCallback callback) {
+                if (browserController != null) browserController.onShowCustomView(view, callback);
+            }
+
+            @Override
+            public void onHideCustomView() {
+                if (browserController != null) browserController.onHideCustomView();
+            }
+        };
+    }
+
+    // ── Public API ────────────────────────────────────────────────────────
+
+    /** Returns the active rendering engine. */
+    public BrowserEngine getEngine() {
+        return engine;
     }
 
     public boolean isForeground() {
-        return foreground;
+        // album tracks foreground state via activate()/deactivate()
+        return album != null && album.isForeground();
     }
 
     public static BrowserController getBrowserController() {
         return browserController;
     }
 
-    public void setBrowserController(BrowserController browserController) {
-        NinjaWebView.browserController = browserController;
-        this.album.setBrowserController(browserController);
+    public void setBrowserController(BrowserController controller) {
+        browserController = controller;
+        if (album != null) album.setBrowserController(controller);
     }
 
-    private synchronized void initWebView() {
-        setWebViewClient(webViewClient);
-        setWebChromeClient(webChromeClient);
-        setDownloadListener(downloadListener);
+    // ── Navigation (delegated to engine) ─────────────────────────────────
+
+    @SuppressLint("ApplySharedPref")
+    public synchronized void loadUrl(@NonNull String url) {
+        // Hide keyboard
+        InputMethodManager imm = (InputMethodManager)
+                context.getSystemService(Context.INPUT_METHOD_SERVICE);
+        if (imm != null) imm.hideSoftInputFromWindow(getWindowToken(), 0);
+
+        stopped = false;
+        engine.loadUrl(url);
     }
 
-    @SuppressLint({"SetJavaScriptEnabled", "JavascriptInterface"})
+    public synchronized void reload() {
+        stopped = false;
+        engine.reload();
+    }
+
+    public synchronized void goBack() {
+        engine.goBack();
+    }
+
+    public void goForward() {
+        engine.goForward();
+    }
+
+    public boolean canGoBack() {
+        return engine.canGoBack();
+    }
+
+    public boolean canGoForward() {
+        return engine.canGoForward();
+    }
+
+    @Override
+    public synchronized void stopLoading() {
+        stopped = true;
+        engine.stopLoading();
+    }
+
+    // ── State (delegated to engine) ───────────────────────────────────────
+
+    public String getUrl()   { return engine.getUrl();   }
+    public String getTitle() { return engine.getTitle(); }
+
+    @Nullable
+    public Bitmap getFavicon() { return engine.getFavicon(); }
+
+    // ── Preferences (called by engine client on page start) ───────────────
+
     public synchronized void initPreferences(String url) {
-
-        this.setRendererPriorityPolicy(RENDERER_PRIORITY_IMPORTANT, true);
-        WebSettings webSettings = getSettings();
-        webSettings.setDefaultTextEncodingName("utf-8");
-        webSettings.setSafeBrowsingEnabled(true);
-        webSettings.setSupportZoom(true);
-        webSettings.setBuiltInZoomControls(true);
-        webSettings.setDisplayZoomControls(false);
-
-        setVerticalScrollBarEnabled(true);
-        setHorizontalScrollBarEnabled(true);
-        setScrollBarStyle(View.SCROLLBARS_INSIDE_OVERLAY);
-        setScrollbarFadingEnabled(false);
-
-        webSettings.setSupportMultipleWindows(true);
-        webSettings.setAllowFileAccess(true);
-        webSettings.setTextZoom(Integer.parseInt(Objects.requireNonNull(sp.getString("sp_fontSize", "100"))));
-        webSettings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
-
-        profile = sp.getString("profile", "profileStandard");
-        String profileOriginal = profile;
-
-        if (listStandard.isWhite(url)) {
-            profile = HelperUnit.domain(url);
-        }
-
-        if (WebViewFeature.isFeatureSupported(WebViewFeature.ALGORITHMIC_DARKENING)) {
-            WebSettingsCompat.setAlgorithmicDarkeningAllowed(webSettings, sp.getBoolean(profile + "_night", true));
-        }
-
-        String desktopUserAgent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36";
-        String mobileUserAgent  = WebSettings.getDefaultUserAgent(context);
-        if (!sp.contains("userAgentSwitch")) {
-            if (Objects.requireNonNull(sp.getString("sp_userAgent", "")).isEmpty()) {
-                sp.edit().putBoolean("userAgentSwitch", false).apply();
-            } else {
-                sp.edit().putBoolean("userAgentSwitch", true).apply();
-            }
-        }
-        String ownUserAgent = sp.getString("sp_userAgent", "");
-        if (!ownUserAgent.isEmpty() && sp.getBoolean("userAgentSwitch", false)) {
-            mobileUserAgent = ownUserAgent;
-        }
-        if (sp.getBoolean(profile + "_desktop", false)) {
-            webSettings.setUserAgentString(desktopUserAgent);
-            getSettings().setUseWideViewPort(true);
-            getSettings().setLoadWithOverviewMode(true);
-            this.setInitialScale(100);
-        } else {
-            webSettings.setUserAgentString(mobileUserAgent);
-            getSettings().setUseWideViewPort(false);
-            getSettings().setLoadWithOverviewMode(false);
-            this.setInitialScale(0);
-        }
-
-        webSettings.setDomStorageEnabled(sp.getBoolean(profile + "_dom", true));
-        webSettings.setMediaPlaybackRequiresUserGesture(sp.getBoolean(profile + "_saveData", true));
-        webSettings.setBlockNetworkImage(!sp.getBoolean(profile + "_images", true));
-        webSettings.setGeolocationEnabled(sp.getBoolean(profile + "_location", false));
-        webSettings.setJavaScriptEnabled(sp.getBoolean(profile + "_javascript", true));
-        webSettings.setJavaScriptCanOpenWindowsAutomatically(sp.getBoolean(profile + "_javascriptPopUp", false));
+        String profile = sp.getString("profile", "profileStandard");
+        List_standard listStd = new List_standard(context);
+        if (listStd.isWhite(url)) profile = HelperUnit.domain(url);
 
         fingerPrintProtection = sp.getBoolean(profile + "_fingerPrintProtection", false);
-        history = sp.getBoolean(profile + "_saveHistory", true);
-        adBlock = sp.getBoolean(profile + "_adBlock", true);
-        saveData = sp.getBoolean(profile + "_saveData", true);
-        camera = sp.getBoolean(profile + "_camera", true);
+        history               = sp.getBoolean(profile + "_saveHistory", true);
+        adBlock               = sp.getBoolean(profile + "_adBlock", true);
+        saveData              = sp.getBoolean(profile + "_saveData", true);
+        camera                = sp.getBoolean(profile + "_camera", true);
 
-        try {
-            CookieManager manager = CookieManager.getInstance();
-            manager.setAcceptCookie(sp.getBoolean(profile + "_cookies", true));
-            manager.setAcceptThirdPartyCookies(this, sp.getBoolean(profile + "_cookiesThirdParty", false));
-            manager.getCookie(url);
-        } catch (Exception e) {
-            Log.i(TAG, "Error loading cookies: " + e);
-        }
-        this.addJavascriptInterface(new WebAppInterface(context), "AndroidInterface");
-        profile = profileOriginal;
+        engine.applyPreferences(sp, profile, url);
     }
 
-    public void setProfileDefaultValues() {
+    // ── Tab state ─────────────────────────────────────────────────────────
 
+    public void setAlbumTitle(String title, String url) {
+        album.setAlbumTitle(title, url);
+    }
+
+    @Override
+    public View getAlbumView() {
+        return album.getAlbumView();
+    }
+
+    @Override
+    public synchronized void activate() {
+        requestFocus();
+        album.activate();
+        engine.activate();
+    }
+
+    @Override
+    public synchronized void deactivate() {
+        clearFocus();
+        album.deactivate();
+        engine.deactivate();
+    }
+
+    // ── Title / favicon updates ───────────────────────────────────────────
+
+    public synchronized void updateTitle(int progress) {
+        if (isForeground() && !stopped && browserController != null)
+            browserController.updateProgress(progress);
+        else if (isForeground() && browserController != null)
+            browserController.updateProgress(BrowserUnit.LOADING_STOPPED);
+    }
+
+    public synchronized void updateTitle(String title, String url) {
+        album.setAlbumTitle(title, url);
+    }
+
+    public synchronized void updateFavicon(String url) {
+        FaviconHelper.setFavicon(context, album.getAlbumView(), url,
+                R.id.item_icon, R.drawable.icon_image_broken);
+    }
+
+    // ── Lifecycle ─────────────────────────────────────────────────────────
+
+    @Override
+    public synchronized void destroy() {
+        stopLoading();
+        engine.onPause();
+        engine.destroy();
+        removeAllViews();
+    }
+
+    public void onPause()  { engine.onPause();  }
+    public void onResume() { engine.onResume(); }
+
+    // ── Profile helpers ───────────────────────────────────────────────────
+
+    public void setProfileDefaultValues() {
         RecordAction action = new RecordAction(context);
         action.open(true);
-        action.addBookmark(new Record("FOSS Browser - WIKI", "https://codeberg.org/Gaukler_Faun/FOSS_Browser/wiki", 0, 0));
+        action.addBookmark(new Record("FOSS Browser - WIKI",
+                "https://codeberg.org/Gaukler_Faun/FOSS_Browser/wiki", 0, 0));
         action.close();
 
         sp.edit()
@@ -233,381 +493,188 @@ public class NinjaWebView extends WebView implements AlbumController {
                 .putBoolean("profileStandard_desktop", false).apply();
     }
 
-    public void setProfileChanged () {
+    public void setProfileChanged() {
         sp.edit()
                 .putString("profile", "profileChanged")
-                .putBoolean("profileChanged_saveData", sp.getBoolean( "profileStandard_saveData", true))
-                .putBoolean("profileChanged_images", sp.getBoolean( "profileStandard_images", true))
-                .putBoolean("profileChanged_adBlock", sp.getBoolean( "profileStandard_adBlock", true))
-                .putBoolean("profileChanged_trackingULS", sp.getBoolean( "profileStandard_trackingULS", true))
-                .putBoolean("profileChanged_location", sp.getBoolean( "profileStandard_location", false))
-                .putBoolean("profileChanged_fingerPrintProtection", sp.getBoolean( "profileStandard_fingerPrintProtection", true))
-                .putBoolean("profileChanged_cookies", sp.getBoolean( "_cookies", false))
-                .putBoolean("profileChanged_cookiesThirdParty", sp.getBoolean( "profileStandard_cookiesThirdParty", false))
-                .putBoolean("profileChanged_deny_cookie_banners", sp.getBoolean( "profileStandard_deny_cookie_banners", false))
-                .putBoolean("profileChanged_javascript", sp.getBoolean( "profileStandard_javascript", true))
-                .putBoolean("profileChanged_javascriptPopUp", sp.getBoolean( "profileStandard_javascriptPopUp", false))
-                .putBoolean("profileChanged_saveHistory", sp.getBoolean( "profileStandard_saveHistory", true))
-                .putBoolean("profileChanged_camera", sp.getBoolean( "profileStandard_camera", false))
-                .putBoolean("profileChanged_microphone", sp.getBoolean( "profileStandard_microphone", false))
-                .putBoolean("profileChanged_dom", sp.getBoolean( "profileStandard_dom", true))
-                .putBoolean("profileChanged_night", sp.getBoolean( "profileStandard_night", true))
-                .putBoolean("profileChanged_desktop", sp.getBoolean( "profileStandard_desktop", false)).apply();
-    }
-
-    private synchronized void initAlbum() {
-        album.setBrowserController(browserController);
-    }
-
-    public synchronized HashMap<String, String> getRequestHeaders() {
-        HashMap<String, String> requestHeaders = new HashMap<>();
-        requestHeaders.put("DNT", "1");
-        //  Server-side detection for GlobalPrivacyControl
-        requestHeaders.put("Sec-GPC", "1");
-        requestHeaders.put("X-Requested-With", "com.duckduckgo.mobile.android");
-        requestHeaders.put("Referer", this.getUrl());
-        profile = sp.getString("profile", "profileStandard");
-        if (sp.getBoolean(profile + "_saveData", true)) requestHeaders.put("Save-Data", "on");
-        return requestHeaders;
-    }
-
-    @Override
-    public synchronized void stopLoading() {
-        stopped = true;
-        super.stopLoading();
-    }
-
-    @SuppressLint("ApplySharedPref")
-    public synchronized void goBack() {
-        WebBackForwardList mWebBackForwardList = this.copyBackForwardList();
-        int currentIndex = mWebBackForwardList.getCurrentIndex();
-        if (currentIndex > 0) {
-            WebHistoryItem historyItem = mWebBackForwardList.getItemAtIndex(currentIndex - 1);
-            if (historyItem != null) {
-                String historyUrl = historyItem.getUrl();
-                initPreferences(historyUrl);
-                String currentUrl = this.getUrl();
-                if (currentUrl != null && !Objects.equals(HelperUnit.domain(currentUrl), HelperUnit.domain(historyUrl))
-                        && sp.getBoolean("sp_standard_always", true)) {
-                    sp.edit().putString("profile", "profileStandard").commit();
-                }
-            }
-        }
-        super.goBack();
-    }
-
-    @Override
-    public synchronized void reload() {
-        stopped = false;
-        this.initPreferences(this.getUrl());
-        super.reload();
-    }
-
-    @Override
-    public synchronized void loadUrl(@NonNull String url) {
-
-        InputMethodManager imm = (InputMethodManager) this.context.getSystemService(Context.INPUT_METHOD_SERVICE);
-        imm.hideSoftInputFromWindow(this.getWindowToken(), 0);
-
-        if (url.contains(";jsessionid=")) {
-            String tracking = url.substring(url.lastIndexOf(";"));
-            url = url.replace(tracking, "");
-        }
-
-        String urlToLoad = BrowserUnit.redirectURL( this, sp, url);
-
-        if (!Objects.equals(HelperUnit.domain(this.getUrl()), HelperUnit.domain(urlToLoad)) && sp.getBoolean("sp_standard_always", true)) {
-            sp.edit().putString("profile", "profileStandard").apply();
-        }
-
-        favicon = null;
-        stopped = false;
-
-        listStandard = new List_standard(context);
-        profile = sp.getString("profile", "profileStandard");
-        if (listStandard.isWhite(url)) profile = HelperUnit.domain(urlToLoad);
-
-        if (sp.getBoolean(profile + "_trackingULS", true) && urlToLoad.contains("?") && urlToLoad.contains("/")) {
-
-            String lastIndex = urlToLoad.substring(urlToLoad.lastIndexOf("/"));
-            String tracking = urlToLoad.substring(urlToLoad.lastIndexOf("?"));
-            String urlClean = urlToLoad.replace(tracking, "");
-            if (lastIndex.contains(tracking)) {
-
-                stopLoading();
-                String m = context.getString(R.string.dialog_tracking) + " \"" + tracking + "\"" + "?";
-
-                if (m.length() > 150) {
-                    m = m.substring(0, 150) + " [...]?\"";
-                }
-
-                GridItem item_01 = new GridItem(context.getString(R.string.app_ok), R.drawable.icon_check);
-                GridItem item_02 = new GridItem( context.getString(R.string.app_no), R.drawable.icon_close);
-                GridItem item_03 = new GridItem( context.getString(R.string.menu_edit), R.drawable.icon_edit);
-
-                View dialogView = View.inflate(context, R.layout.dialog_menu, null);
-                MaterialAlertDialogBuilder builderTrack = new MaterialAlertDialogBuilder(context);
-
-                LinearLayout textGroup = dialogView.findViewById(R.id.textGroup);
-                TextView overflowURL = dialogView.findViewById(R.id.overflowURL);
-                overflowURL.setText(urlToLoad);
-                TextView overflowMessage = dialogView.findViewById(R.id.overflowMessage);
-                overflowMessage.setText(m);
-                HelperUnit.setHighLightedText(context, overflowURL, url, HelperUnit.domain(url));
-                TextView menuTitle = dialogView.findViewById(R.id.overflowTitle);
-                menuTitle.setText(HelperUnit.domain(urlToLoad));
-                textGroup.setOnClickListener(v ->
-                        HelperUnit.showCustomSnackbarWithTwoActions(
-                        context, dialogView, null,
-                        HelperUnit.domain(urlToLoad),"" ,urlToLoad,
-                        R.drawable.icon_share, () -> {
-                            Intent sharingIntent;
-                            sharingIntent = new Intent(Intent.ACTION_SEND);
-                            sharingIntent.setType("text/plain");
-                            sharingIntent.putExtra(Intent.EXTRA_SUBJECT, HelperUnit.domain(urlToLoad));
-                            sharingIntent.putExtra(Intent.EXTRA_TEXT, urlToLoad);
-                            context.startActivity(Intent.createChooser(sharingIntent, (context.getString(R.string.menu_share_link))));
-                            return true;
-                        },
-                        R.drawable.icon_close, () -> true
-                ));
-
-                FloatingActionButton buttonProfile = dialogView.findViewById(R.id.buttonProfile);
-                NinjaWebView.getBrowserController().setProfileIcon(buttonProfile, urlToLoad);
-                FaviconHelper.setFavicon(context, dialogView, urlToLoad, R.id.menu_icon, R.drawable.icon_image_broken);
-                buttonProfile.setOnClickListener(v -> NinjaWebView.getBrowserController().showDialogFastToggle(HelperUnit.domain(urlToLoad),urlToLoad, buttonProfile));
-                buttonProfile.setOnLongClickListener(v -> {
-                    sp.edit().putString("profile", "profileStandard").apply();
-                    NinjaWebView.getBrowserController().setProfileIcon(buttonProfile, urlToLoad);
-                    listStandard = new List_standard(context);
-                    if (!listStandard.isWhite(urlToLoad)){
-                        reload();
-                    }
-                    return false;
-                });
-
-                builderTrack.setView(dialogView);
-                AlertDialog dialogTrack = builderTrack.create();
-                Button menuCancel = dialogView.findViewById(R.id.menuCancel);
-                menuCancel.setVisibility(VISIBLE);
-                menuCancel.setOnClickListener(v -> {
-                    dialogTrack.cancel();
-                    loadUrl("about:blank");
-                });
-                dialogTrack.show();
-                dialogTrack.setCancelable(false);
-                HelperUnit.setupDialog(context, dialogTrack);
-
-                GridView menu_grid = dialogView.findViewById(R.id.menu_grid);
-                final List<GridItem> gridList = new LinkedList<>();
-                gridList.add(gridList.size(), item_01);
-                gridList.add(gridList.size(), item_02);
-                gridList.add(gridList.size(), item_03);
-                GridAdapter gridAdapter = new GridAdapter(context, gridList);
-                menu_grid.setAdapter(gridAdapter);
-                gridAdapter.notifyDataSetChanged();
-                menu_grid.setOnItemClickListener((parent, view, position, id) -> {
-                    switch (position) {
-                        case 0:
-                            dialogTrack.cancel();
-                            initPreferences(BrowserUnit.queryWrapper(context, urlClean));
-                            super.loadUrl(BrowserUnit.queryWrapper(context, urlClean), getRequestHeaders());
-                            break;
-                        case 1:
-                            dialogTrack.cancel();
-                            initPreferences(BrowserUnit.queryWrapper(context, urlToLoad));
-                            super.loadUrl(BrowserUnit.queryWrapper(context, urlToLoad), getRequestHeaders());
-                            break;
-                        case 2:
-                            dialogTrack.cancel();
-                            View dialogEdit = View.inflate(getContext(), R.layout.dialog_edit_text, null);
-                            TextInputEditText input = dialogEdit.findViewById(R.id.textInput);
-                            input.setText(urlToLoad);
-                            HelperUnit.showSoftKeyboard(input);
-
-                            MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(context);
-                            builder.setTitle(context.getString(R.string.menu_edit));
-                            builder.setIcon(R.drawable.icon_tracking);
-                            builder.setPositiveButton(R.string.app_ok, (dialog, i) -> {
-                                dialog.dismiss();
-                                String newValue = Objects.requireNonNull(input.getText()).toString();
-                                initPreferences(BrowserUnit.queryWrapper(context, newValue));
-                                super.loadUrl(BrowserUnit.queryWrapper(context, newValue), getRequestHeaders());
-                            });
-                            builder.setView(dialogEdit);
-                            Dialog dialog = builder.create();
-                            dialog.show();
-                            dialog.setCancelable(false);
-                            HelperUnit.setupDialog(context, dialog);
-                            break;
-                    }
-                });
-            }
-
-        } else if (url.startsWith("http://") && sp.getString("dialog_neverAsk", "no").equals("no")) {
-
-            stopLoading();
-
-            GridItem item_01 = new GridItem("https://", R.drawable.icon_secure);
-            GridItem item_02 = new GridItem( "http://", R.drawable.icon_unsecure);
-            GridItem item_03 = new GridItem( context.getString(R.string.app_never), R.drawable.icon_close);
-
-            View dialogView = View.inflate(context, R.layout.dialog_menu, null);
-            MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(context);
-
-            CardView albumCardView = dialogView.findViewById(R.id.item_CardViewItem);
-            albumCardView.setVisibility(GONE);
-
-            String secure = url.replace("http://", "https://");
-            String unSecure = url;
-
-            builder.setTitle(HelperUnit.domain(url));
-            builder.setIcon(R.drawable.icon_unsecure);
-            builder.setMessage(R.string.toast_unsecured);
-            builder.setView(dialogView);
-
-            AlertDialog dialog = builder.create();
-            Button menuCancel = dialogView.findViewById(R.id.menuCancel);
-            menuCancel.setVisibility(VISIBLE);
-            menuCancel.setOnClickListener(v -> {
-                dialog.cancel();
-                loadUrl("about:blank");
-            });
-            dialog.show();
-            dialog.setCancelable(false);
-            HelperUnit.setupDialog(context, dialog);
-
-            GridView menu_grid = dialogView.findViewById(R.id.menu_grid);
-            final List<GridItem> gridList = new LinkedList<>();
-            gridList.add(gridList.size(), item_01);
-            gridList.add(gridList.size(), item_02);
-            gridList.add(gridList.size(), item_03);
-            GridAdapter gridAdapter = new GridAdapter(context, gridList);
-            menu_grid.setAdapter(gridAdapter);
-            gridAdapter.notifyDataSetChanged();
-            menu_grid.setOnItemClickListener((parent, view, position, id) -> {
-                switch (position) {
-                    case 0:
-                        dialog.cancel();
-                        initPreferences(BrowserUnit.queryWrapper(context, secure));
-                        super.loadUrl(BrowserUnit.queryWrapper(context, secure), getRequestHeaders());
-                        break;
-                    case 1:
-                        dialog.cancel();
-                        initPreferences(BrowserUnit.queryWrapper(context, unSecure));
-                        super.loadUrl(BrowserUnit.queryWrapper(context, unSecure), getRequestHeaders());
-                        break;
-                    case 2:
-                        sp.edit().putString("dialog_neverAsk", "yes").apply();
-                        initPreferences(BrowserUnit.queryWrapper(context, unSecure));
-                        super.loadUrl(BrowserUnit.queryWrapper(context, unSecure), getRequestHeaders());
-                        break;
-                }
-            });
-        } else {
-            initPreferences(BrowserUnit.queryWrapper(context, urlToLoad));
-            super.loadUrl(BrowserUnit.queryWrapper(context, urlToLoad), getRequestHeaders());
-        }
-    }
-
-    @Override
-    public View getAlbumView() {
-        return album.getAlbumView();
-    }
-
-    public void setAlbumTitle(String title, String url) {
-        album.setAlbumTitle(title, url);
-    }
-
-    @Override
-    public synchronized void activate() {
-        requestFocus();
-        foreground = true;
-        album.activate();
-    }
-
-    @Override
-    public synchronized void deactivate() {
-        clearFocus();
-        foreground = false;
-        album.deactivate();
-    }
-
-    public synchronized void updateTitle(int progress) {
-        if (foreground && !stopped) browserController.updateProgress(progress);
-        else if (foreground) browserController.updateProgress(BrowserUnit.LOADING_STOPPED);
-    }
-
-    public synchronized void updateTitle(String title, String url) {
-        album.setAlbumTitle(title, url);
-    }
-
-    public synchronized void updateFavicon(String url) {
-        FaviconHelper.setFavicon(context, album.getAlbumView(), url, R.id.item_icon, R.drawable.icon_image_broken);
-    }
-
-    @Override
-    public synchronized void destroy() {
-        stopLoading();
-        onPause();
-        clearHistory();
-        setVisibility(GONE);
-        removeAllViews();
-        super.destroy();
-    }
-
-    public boolean isFingerPrintProtection() {
-        return fingerPrintProtection;
-    }
-
-    public boolean isHistory() {
-        return history;
-    }
-
-    public boolean isAdBlock() {
-        return adBlock;
-    }
-
-    public boolean isSaveData() {
-        return saveData;
-    }
-
-    public boolean isCamera() {
-        return camera;
-    }
-
-    public void resetFavicon() {
-        this.favicon = null;
-    }
-
-    @Nullable
-    @Override
-    public Bitmap getFavicon() {
-        return favicon;
-    }
-
-    public void setFavicon(Bitmap favicon) {
-        this.favicon = favicon;
-        FaviconHelper faviconHelper = new FaviconHelper(context);
-        RecordAction action = new RecordAction(context);
-        action.open(false);
-        action.close();
-        faviconHelper.addFavicon(this.context, getUrl(), getFavicon());
-    }
-
-    public void setStopped(boolean stopped) {
-        this.stopped = stopped;
+                .putBoolean("profileChanged_saveData",    sp.getBoolean("profileStandard_saveData", true))
+                .putBoolean("profileChanged_images",      sp.getBoolean("profileStandard_images", true))
+                .putBoolean("profileChanged_adBlock",     sp.getBoolean("profileStandard_adBlock", true))
+                .putBoolean("profileChanged_trackingULS", sp.getBoolean("profileStandard_trackingULS", true))
+                .putBoolean("profileChanged_location",    sp.getBoolean("profileStandard_location", false))
+                .putBoolean("profileChanged_fingerPrintProtection",
+                        sp.getBoolean("profileStandard_fingerPrintProtection", true))
+                .putBoolean("profileChanged_cookies",
+                        sp.getBoolean("_cookies", false))
+                .putBoolean("profileChanged_cookiesThirdParty",
+                        sp.getBoolean("profileStandard_cookiesThirdParty", false))
+                .putBoolean("profileChanged_deny_cookie_banners",
+                        sp.getBoolean("profileStandard_deny_cookie_banners", false))
+                .putBoolean("profileChanged_javascript",
+                        sp.getBoolean("profileStandard_javascript", true))
+                .putBoolean("profileChanged_javascriptPopUp",
+                        sp.getBoolean("profileStandard_javascriptPopUp", false))
+                .putBoolean("profileChanged_saveHistory",
+                        sp.getBoolean("profileStandard_saveHistory", true))
+                .putBoolean("profileChanged_camera",
+                        sp.getBoolean("profileStandard_camera", false))
+                .putBoolean("profileChanged_microphone",
+                        sp.getBoolean("profileStandard_microphone", false))
+                .putBoolean("profileChanged_dom",    sp.getBoolean("profileStandard_dom", true))
+                .putBoolean("profileChanged_night",  sp.getBoolean("profileStandard_night", true))
+                .putBoolean("profileChanged_desktop",sp.getBoolean("profileStandard_desktop", false))
+                .apply();
     }
 
     public static String getProfile() {
         return sp.getString("profile", "profileStandard");
     }
 
-    public AlbumController getPredecessor() {
-        return predecessor;
+    // ── Predecessor (tab opening hierarchy) ───────────────────────────────
+
+    public AlbumController getPredecessor()                        { return predecessor; }
+    public void setPredecessor(AlbumController predecessor)        { this.predecessor = predecessor; }
+
+    // ── Misc helpers ──────────────────────────────────────────────────────
+
+    public void setStopped(boolean stopped) { this.stopped = stopped; }
+    public boolean isAdBlock()              { return adBlock; }
+    public boolean isHistory()              { return history; }
+    public boolean isSaveData()             { return saveData; }
+    public boolean isCamera()              { return camera; }
+    public boolean isFingerPrintProtection(){ return fingerPrintProtection; }
+    public void resetFavicon()              { /* favicon managed by engine */ }
+
+    /** Evaluates JavaScript in the current page (delegates to engine). */
+    public void evaluateJavascript(String script, ValueCallback<String> callback) {
+        engine.evaluateJavascript(script, callback);
     }
 
-    public void setPredecessor(AlbumController predecessor) {
-        this.predecessor = predecessor;
+    // ── Internal dialog handlers ──────────────────────────────────────────
+
+    /**
+     * Handles the "internal://tracking-dialog" synthetic URL that
+     * {@link WebViewEngine} fires when tracking params are detected.
+     */
+    private void handleTrackingDialog(String syntheticUrl) {
+        Uri parsed   = Uri.parse(syntheticUrl);
+        String url   = parsed.getQueryParameter("url");
+        String clean = parsed.getQueryParameter("clean");
+        if (url == null) return;
+
+        final String finalUrl   = url;
+        final String finalClean = clean != null ? clean : url;
+
+        GridItem item01 = new GridItem(context.getString(R.string.app_ok), R.drawable.icon_check);
+        GridItem item02 = new GridItem(context.getString(R.string.app_no), R.drawable.icon_close);
+        GridItem item03 = new GridItem(context.getString(R.string.menu_edit), R.drawable.icon_edit);
+
+        View dialogView = View.inflate(context, R.layout.dialog_menu, null);
+        MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(context);
+        String tracking = finalUrl.substring(finalUrl.lastIndexOf("?"));
+        String msg = context.getString(R.string.dialog_tracking) + " \"" + tracking + "\"?";
+        if (msg.length() > 150) msg = msg.substring(0, 150) + " [...]?\"";
+
+        TextView overflowMessage = dialogView.findViewById(R.id.overflowMessage);
+        overflowMessage.setText(msg);
+        TextView overflowURL = dialogView.findViewById(R.id.overflowURL);
+        overflowURL.setText(finalUrl);
+        builder.setView(dialogView);
+
+        AlertDialog dialog = builder.create();
+        Button cancel = dialogView.findViewById(R.id.menuCancel);
+        cancel.setVisibility(View.VISIBLE);
+        cancel.setOnClickListener(v -> { dialog.cancel(); loadUrl("about:blank"); });
+        dialog.show();
+        dialog.setCancelable(false);
+        HelperUnit.setupDialog(context, dialog);
+
+        GridView menuGrid = dialogView.findViewById(R.id.menu_grid);
+        List<GridItem> gridList = new LinkedList<>();
+        gridList.add(item01);
+        gridList.add(item02);
+        gridList.add(item03);
+        GridAdapter adapter = new GridAdapter(context, gridList);
+        menuGrid.setAdapter(adapter);
+        menuGrid.setOnItemClickListener((parent, view, position, id) -> {
+            dialog.cancel();
+            switch (position) {
+                case 0: engine.loadUrl(BrowserUnit.queryWrapper(context, finalClean)); break;
+                case 1: engine.loadUrl(BrowserUnit.queryWrapper(context, finalUrl));   break;
+                case 2:
+                    View editView = View.inflate(context, R.layout.dialog_edit_text, null);
+                    TextInputEditText input = editView.findViewById(R.id.textInput);
+                    input.setText(finalUrl);
+                    HelperUnit.showSoftKeyboard(input);
+                    new MaterialAlertDialogBuilder(context)
+                            .setTitle(R.string.menu_edit)
+                            .setIcon(R.drawable.icon_tracking)
+                            .setView(editView)
+                            .setPositiveButton(R.string.app_ok, (d, i) -> {
+                                d.dismiss();
+                                engine.loadUrl(BrowserUnit.queryWrapper(context,
+                                        Objects.requireNonNull(input.getText()).toString()));
+                            })
+                            .create().show();
+                    break;
+            }
+        });
+    }
+
+    /**
+     * Handles the "internal://http-dialog" synthetic URL that
+     * {@link WebViewEngine} fires for plain-HTTP URLs.
+     */
+    private void handleHttpDialog(String syntheticUrl) {
+        Uri parsed = Uri.parse(syntheticUrl);
+        String url = parsed.getQueryParameter("url");
+        if (url == null) return;
+
+        String secure   = url.replace("http://", "https://");
+        String unSecure = url;
+
+        GridItem item01 = new GridItem("https://", R.drawable.icon_secure);
+        GridItem item02 = new GridItem("http://",  R.drawable.icon_unsecure);
+        GridItem item03 = new GridItem(context.getString(R.string.app_never), R.drawable.icon_close);
+
+        View dialogView = View.inflate(context, R.layout.dialog_menu, null);
+        CardView card = dialogView.findViewById(R.id.item_CardViewItem);
+        card.setVisibility(View.GONE);
+
+        AlertDialog dialog = new MaterialAlertDialogBuilder(context)
+                .setTitle(HelperUnit.domain(url))
+                .setIcon(R.drawable.icon_unsecure)
+                .setMessage(R.string.toast_unsecured)
+                .setView(dialogView)
+                .create();
+
+        Button cancel = dialogView.findViewById(R.id.menuCancel);
+        cancel.setVisibility(View.VISIBLE);
+        cancel.setOnClickListener(v -> { dialog.cancel(); loadUrl("about:blank"); });
+        dialog.show();
+        dialog.setCancelable(false);
+        HelperUnit.setupDialog(context, dialog);
+
+        GridView menuGrid = dialogView.findViewById(R.id.menu_grid);
+        List<GridItem> gridList = new LinkedList<>();
+        gridList.add(item01);
+        gridList.add(item02);
+        gridList.add(item03);
+        GridAdapter adapter = new GridAdapter(context, gridList);
+        menuGrid.setAdapter(adapter);
+        menuGrid.setOnItemClickListener((parent, view, position, id) -> {
+            dialog.cancel();
+            switch (position) {
+                case 0:
+                    engine.loadUrl(BrowserUnit.queryWrapper(context, secure));
+                    break;
+                case 1:
+                    engine.loadUrl(BrowserUnit.queryWrapper(context, unSecure));
+                    break;
+                case 2:
+                    sp.edit().putString("dialog_neverAsk", "yes").apply();
+                    engine.loadUrl(BrowserUnit.queryWrapper(context, unSecure));
+                    break;
+            }
+        });
     }
 }
