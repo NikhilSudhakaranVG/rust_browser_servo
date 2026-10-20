@@ -40,6 +40,18 @@ android {
 
     // Required: Servo renders via OpenGL ES
     defaultConfig.resConfigs "en" // optional: reduce APK size
+
+    sourceSets {
+        main {
+            res.srcDirs = [
+                'src/main/res/common',
+                'src/main/res/main',
+                'src/main/res/settings',
+                'src/main/res/dialogs',
+                'src/main/res/translations'
+            ]
+        }
+    }
 }
 
 dependencies {
