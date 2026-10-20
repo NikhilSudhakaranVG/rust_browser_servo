@@ -22,10 +22,13 @@ import de.baumann.browser.R;
 import de.baumann.browser.feature.data.FaviconHelper;
 import de.baumann.browser.feature.data.Record;
 
+import android.util.LruCache;
+
 public class AdapterHomeShortcuts extends RecyclerView.Adapter<AdapterHomeShortcuts.ViewHolder> {
 
     private static final int VIEW_TYPE_SHORTCUT = 0;
     private static final int VIEW_TYPE_ADD = 1;
+    private static final LruCache<String, Bitmap> sFaviconCache = new LruCache<>(64);
 
     public interface ShortcutListener {
         void onShortcutClick(Record record);
@@ -76,10 +79,25 @@ public class AdapterHomeShortcuts extends RecyclerView.Adapter<AdapterHomeShortc
             context.getTheme().resolveAttribute(com.google.android.material.R.attr.colorSurfaceContainer, typedValue, true);
             holder.card.setCardBackgroundColor(typedValue.data);
 
-            try (FaviconHelper faviconHelper = new FaviconHelper(context)) {
-                Bitmap bitmap = faviconHelper.getFavicon(item.getURL());
-                if (bitmap != null) {
-                    holder.icon.setImageBitmap(bitmap);
+            String url = item.getURL();
+            Bitmap cachedBitmap = (url != null) ? sFaviconCache.get(url) : null;
+            if (cachedBitmap != null) {
+                holder.icon.setImageBitmap(cachedBitmap);
+                holder.icon.setVisibility(View.VISIBLE);
+                holder.letter.setVisibility(View.GONE);
+            } else {
+                Bitmap loadedBitmap = null;
+                if (url != null) {
+                    try (FaviconHelper faviconHelper = new FaviconHelper(context)) {
+                        loadedBitmap = faviconHelper.getFavicon(url);
+                        if (loadedBitmap != null) {
+                            sFaviconCache.put(url, loadedBitmap);
+                        }
+                    } catch (Exception ignored) {}
+                }
+
+                if (loadedBitmap != null) {
+                    holder.icon.setImageBitmap(loadedBitmap);
                     holder.icon.setVisibility(View.VISIBLE);
                     holder.letter.setVisibility(View.GONE);
                 } else {

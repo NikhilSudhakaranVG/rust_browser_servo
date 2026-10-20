@@ -19,6 +19,9 @@ import java.util.List;
 
 import de.baumann.browser.R;
 
+import android.graphics.Color;
+import androidx.core.content.ContextCompat;
+
 public class GridAdapter extends BaseAdapter {
     private final List<GridItem> list;
     private final Context context;
@@ -30,30 +33,37 @@ public class GridAdapter extends BaseAdapter {
 
     @Override
     public View getView(int position, View convertView, ViewGroup parent) {
-
         SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(context);
         Holder holder;
         View view = convertView;
 
         if (view == null) {
-
-            GridItem item = list.get(position);
-            String text = item.getTitle();
-
             view = LayoutInflater.from(context).inflate(R.layout.item_menu, parent, false);
             holder = new Holder();
             holder.title = view.findViewById(R.id.menuEntry);
-            holder.title.setText(text);
             holder.cardView = view.findViewById(R.id.menuCardView);
             holder.iconMenu = view.findViewById(R.id.iconMenu);
+            view.setTag(holder);
+        } else {
+            holder = (Holder) view.getTag();
+        }
 
+        GridItem item = list.get(position);
+        String text = item.getTitle();
+        if (holder.title != null) {
+            holder.title.setText(text);
+        }
+
+        if (holder.iconMenu != null) {
             try {
                 holder.iconMenu.setImageResource(item.getData());
             } catch (Exception e) {
                 Log.i("FOSS Browser", "Exception:" + e);
             }
+        }
 
-            if (sp.getString("showFilterDialogX", "false").equals("true")) {
+        if (holder.cardView != null) {
+            if ("true".equals(sp.getString("showFilterDialogX", "false"))) {
                 if (text.equals(sp.getString("icon_01", context.getResources().getString(R.string.color_red)))) holder.cardView.setCardBackgroundColor(ResourcesCompat.getColor(context.getResources(), R.color.red, null));
                 else if (text.equals(sp.getString("icon_02", context.getResources().getString(R.string.color_pink)))) holder.cardView.setCardBackgroundColor(ResourcesCompat.getColor(context.getResources(), R.color.pink, null));
                 else if (text.equals(sp.getString("icon_03", context.getResources().getString(R.string.color_purple)))) holder.cardView.setCardBackgroundColor(ResourcesCompat.getColor(context.getResources(), R.color.purple, null));
@@ -68,17 +78,14 @@ public class GridAdapter extends BaseAdapter {
                 else if (text.equals(sp.getString("icon_12", context.getResources().getString(R.string.setting_theme_system)))) {
                     TypedValue typedValue = new TypedValue();
                     context.getTheme().resolveAttribute(com.google.android.material.R.attr.colorSecondaryContainer, typedValue, true);
-                    int color = typedValue.data;
-                    holder.cardView.setCardBackgroundColor(color);
+                    holder.cardView.setCardBackgroundColor(typedValue.data);
                 }
             } else {
-                TypedValue typedValue = new TypedValue();
-                context.getTheme().resolveAttribute(android.R.color.transparent, typedValue, true);
-                int color = typedValue.data;
-                holder.iconMenu.setVisibility(View.VISIBLE);
-                holder.cardView.setCardBackgroundColor(color);
+                if (holder.iconMenu != null) {
+                    holder.iconMenu.setVisibility(View.VISIBLE);
+                }
+                holder.cardView.setCardBackgroundColor(Color.TRANSPARENT);
             }
-            view.setTag(holder);
         }
         return view;
     }

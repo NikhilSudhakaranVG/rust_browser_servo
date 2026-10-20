@@ -9,9 +9,11 @@ public class ActivityShare extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         Intent intent = getIntent();
-        String sharedText = intent.getStringExtra(Intent.EXTRA_TEXT);
+        String sharedText = intent != null ? intent.getStringExtra(Intent.EXTRA_TEXT) : null;
         Intent browserIntent = new Intent(this, BrowserActivity.class);
-        browserIntent.putExtra(android.content.Intent.EXTRA_TEXT, sharedText);
+        if (sharedText != null) {
+            browserIntent.putExtra(Intent.EXTRA_TEXT, sharedText);
+        }
         browserIntent.setAction("postLink");
         startActivity(browserIntent);
         finish();

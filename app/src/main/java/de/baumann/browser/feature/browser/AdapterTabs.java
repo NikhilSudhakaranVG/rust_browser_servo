@@ -61,18 +61,22 @@ public class AdapterTabs {
         return foreground;
     }
 
-    public Object getUrl() {
-        return albumUrl.getText().toString();
+    public String getUrl() {
+        return albumUrl != null ? albumUrl.getText().toString() : "";
     }
 
     void setAlbumTitle(String title, String url) {
-        if (isIncognito && (title == null || title.isEmpty() || title.equals(context.getString(R.string.home)))) {
-            albumTitle.setText(context.getString(R.string.incognito_tab));
-        } else {
-            albumTitle.setText(title);
+        if (albumTitle != null) {
+            if (isIncognito && (title == null || title.isEmpty() || title.equals(context.getString(R.string.home)))) {
+                albumTitle.setText(context.getString(R.string.incognito_tab));
+            } else {
+                albumTitle.setText(title);
+            }
         }
-        albumUrl.setText(url);
-        HelperUnit.setHighLightedText(context, albumUrl, url, HelperUnit.domain(url));
+        if (albumUrl != null) {
+            albumUrl.setText(url);
+            HelperUnit.setHighLightedText(context, albumUrl, url, HelperUnit.domain(url));
+        }
         if (albumIcon != null) {
             albumIcon.setImageResource(isIncognito ? R.drawable.icon_incognito : R.drawable.icon_web);
         }
@@ -93,19 +97,27 @@ public class AdapterTabs {
             albumIcon.setImageResource(isIncognito ? R.drawable.icon_incognito : R.drawable.icon_web);
         }
         ImageView albumClose = albumView.findViewById(R.id.iconView);
-        albumClose.setImageResource(R.drawable.icon_tab_remove);
-        albumClose.setVisibility(View.VISIBLE);
-        albumClose.setOnClickListener(view -> {
-            browserController.removeAlbum(albumController);
-            if (BrowserContainer.size() < 2) {
-                browserController.hideOverview();
-            }
-        });
-        assert albumCardView != null;
-        albumView.setOnLongClickListener(v -> {
-            browserController.showOverflow(null, albumCardView, 1, albumTitle.getText().toString(), albumUrl.getText().toString(), null, null, 0);
-            return true;
-        });
+        if (albumClose != null) {
+            albumClose.setImageResource(R.drawable.icon_tab_remove);
+            albumClose.setVisibility(View.VISIBLE);
+            albumClose.setOnClickListener(view -> {
+                if (browserController != null) {
+                    browserController.removeAlbum(albumController);
+                    if (BrowserContainer.size() < 2) {
+                        browserController.hideOverview();
+                    }
+                }
+            });
+        }
+        if (albumCardView != null) {
+            albumView.setOnLongClickListener(v -> {
+                if (browserController != null && albumTitle != null && albumUrl != null) {
+                    browserController.showOverflow(null, albumCardView, 1, albumTitle.getText().toString(), albumUrl.getText().toString(), null, null, 0);
+                    return true;
+                }
+                return false;
+            });
+        }
     }
 
     public void activate() {
@@ -113,12 +125,22 @@ public class AdapterTabs {
         TypedValue typedValue = new TypedValue();
         context.getTheme().resolveAttribute(com.google.android.material.R.attr.colorPrimaryInverse, typedValue, true);
         int color = isIncognito ? ContextCompat.getColor(context, R.color.incognito_tab_active) : typedValue.data;
-        albumCardView.setCardBackgroundColor(color);
-        albumTitle.setTypeface(null, Typeface.BOLD);
-        albumView.setOnClickListener(view -> {
+        if (albumCardView != null) {
             albumCardView.setCardBackgroundColor(color);
-            browserController.hideOverview();
-        });
+        }
+        if (albumTitle != null) {
+            albumTitle.setTypeface(null, Typeface.BOLD);
+        }
+        if (albumView != null) {
+            albumView.setOnClickListener(view -> {
+                if (albumCardView != null) {
+                    albumCardView.setCardBackgroundColor(color);
+                }
+                if (browserController != null) {
+                    browserController.hideOverview();
+                }
+            });
+        }
     }
 
     void deactivate() {
@@ -126,11 +148,19 @@ public class AdapterTabs {
         TypedValue typedValue = new TypedValue();
         context.getTheme().resolveAttribute(com.google.android.material.R.attr.colorSurfaceContainerHighest, typedValue, true);
         int color = isIncognito ? ContextCompat.getColor(context, R.color.incognito_tab_inactive) : typedValue.data;
-        albumCardView.setCardBackgroundColor(color);
-        albumTitle.setTypeface(null, Typeface.NORMAL);
-        albumView.setOnClickListener(view -> {
-            browserController.showAlbum(albumController);
-            browserController.hideOverview();
-        });
+        if (albumCardView != null) {
+            albumCardView.setCardBackgroundColor(color);
+        }
+        if (albumTitle != null) {
+            albumTitle.setTypeface(null, Typeface.NORMAL);
+        }
+        if (albumView != null) {
+            albumView.setOnClickListener(view -> {
+                if (browserController != null) {
+                    browserController.showAlbum(albumController);
+                    browserController.hideOverview();
+                }
+            });
+        }
     }
 }

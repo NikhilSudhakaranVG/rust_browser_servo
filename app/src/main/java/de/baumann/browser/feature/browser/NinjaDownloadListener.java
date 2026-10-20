@@ -150,7 +150,13 @@ public class NinjaDownloadListener implements DownloadListener {
                                     String text = context.getString(R.string.app_done) + ". " + context.getString(R.string.menu_download) + "?";
                                     Snackbar snackbar = Snackbar.make(webView, text, Snackbar.LENGTH_SHORT);
                                     HelperUnit.makeSnackbarRound(snackbar);
-                                    snackbar.setAction(context.getString(R.string.app_ok), (v -> context.startActivity(Intent.createChooser(new Intent(DownloadManager.ACTION_VIEW_DOWNLOADS), null))));
+                                    snackbar.setAction(context.getString(R.string.app_ok), v -> {
+                                        Intent chooser = Intent.createChooser(new Intent(DownloadManager.ACTION_VIEW_DOWNLOADS), null);
+                                        if (!(context instanceof Activity)) {
+                                            chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                                        }
+                                        context.startActivity(chooser);
+                                    });
                                     snackbar.show();
                                 });
                             } catch (Exception e) {
@@ -184,7 +190,13 @@ public class NinjaDownloadListener implements DownloadListener {
     }
     @SuppressLint("SetTextI18n")
     public static void saveAs(final Activity activity, final String url, final String name, Dialog dialogParent) {
-        if (url != null && url.startsWith("blob:")) {
+        if (url == null || url.trim().isEmpty()) {
+            NinjaToast.show(activity, activity.getString(R.string.toast_input_empty));
+            if (dialogParent != null) dialogParent.cancel();
+            return;
+        }
+
+        if (url.startsWith("blob:")) {
             NinjaToast.show(activity, activity.getString(R.string.app_error) + ": Blob-Download");
             if (dialogParent != null) dialogParent.cancel();
             return;
@@ -248,7 +260,6 @@ public class NinjaDownloadListener implements DownloadListener {
                     NinjaToast.show(activity, activity.getString(R.string.toast_input_empty));
                 } else {
                     try {
-                        assert url != null;
                         if (url.startsWith("data:")) {
                             DataURIParser dataURIParser = new DataURIParser(url);
                             byte[] dataBytes = dataURIParser.getImagedata();
@@ -273,9 +284,12 @@ public class NinjaDownloadListener implements DownloadListener {
                                     }
                                 }
                                 String text = activity.getString(R.string.app_done) + ". " + activity.getString(R.string.menu_download) + "?";
-                                Snackbar snackbar = Snackbar.make(BrowserActivity.getView(), text, Snackbar.LENGTH_LONG);
-                                snackbar.setAction(activity.getString(R.string.app_ok), v -> activity.startActivity(Intent.createChooser(new Intent(DownloadManager.ACTION_VIEW_DOWNLOADS), null)));
-                                snackbar.show();
+                                View anchor = BrowserActivity.getView() != null ? BrowserActivity.getView() : activity.findViewById(android.R.id.content);
+                                if (anchor != null) {
+                                    Snackbar snackbar = Snackbar.make(anchor, text, Snackbar.LENGTH_LONG);
+                                    snackbar.setAction(activity.getString(R.string.app_ok), v -> activity.startActivity(Intent.createChooser(new Intent(DownloadManager.ACTION_VIEW_DOWNLOADS), null)));
+                                    snackbar.show();
+                                }
                             } else {
                                 throw new java.io.IOException("MediaStore entry creation failed.");
                             }

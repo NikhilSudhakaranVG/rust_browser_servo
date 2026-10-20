@@ -139,8 +139,13 @@ public class NinjaWebView extends FrameLayout implements AlbumController {
             useServo = prefs.getBoolean(PREF_USE_SERVO, false);
         }
         if (useServo) {
-            Log.i(TAG, "NinjaWebView: using ServoEngine");
-            return new ServoEngine(context);
+            try {
+                Log.i(TAG, "NinjaWebView: using ServoEngine");
+                return new ServoEngine(context);
+            } catch (Throwable t) {
+                Log.e(TAG, "NinjaWebView: Failed to initialize ServoEngine, falling back to WebViewEngine", t);
+                return new WebViewEngine(context);
+            }
         } else {
             Log.i(TAG, "NinjaWebView: using WebViewEngine");
             return new WebViewEngine(context);
@@ -155,7 +160,7 @@ public class NinjaWebView extends FrameLayout implements AlbumController {
 
         this.stopped = false;
         this.fingerPrintProtection = sp.getBoolean(profile + "_fingerPrintProtection", true);
-        this.history               = sp.getBoolean(profile + "_history", true);
+        this.history               = sp.getBoolean(profile + "_saveHistory", true);
         this.adBlock               = sp.getBoolean(profile + "_adBlock", false);
         this.saveData              = sp.getBoolean(profile + "_saveData", false);
         this.camera                = sp.getBoolean(profile + "_camera", false);
@@ -232,6 +237,13 @@ public class NinjaWebView extends FrameLayout implements AlbumController {
 
             @Override
             public void onSslError(String url, BrowserEngineClient.SslErrorHandler handler) {
+                if (context instanceof Activity) {
+                    Activity a = (Activity) context;
+                    if (a.isFinishing() || a.isDestroyed()) {
+                        handler.cancel();
+                        return;
+                    }
+                }
                 // Show SSL error dialog
                 new MaterialAlertDialogBuilder(context)
                         .setTitle(R.string.app_error)
@@ -282,6 +294,13 @@ public class NinjaWebView extends FrameLayout implements AlbumController {
 
             @Override
             public void onJsAlert(String message, Runnable confirm) {
+                if (context instanceof Activity) {
+                    Activity a = (Activity) context;
+                    if (a.isFinishing() || a.isDestroyed()) {
+                        confirm.run();
+                        return;
+                    }
+                }
                 new MaterialAlertDialogBuilder(context)
                         .setMessage(message)
                         .setCancelable(false)
@@ -291,6 +310,13 @@ public class NinjaWebView extends FrameLayout implements AlbumController {
 
             @Override
             public void onJsConfirm(String message, Runnable confirm, Runnable cancel) {
+                if (context instanceof Activity) {
+                    Activity a = (Activity) context;
+                    if (a.isFinishing() || a.isDestroyed()) {
+                        cancel.run();
+                        return;
+                    }
+                }
                 new MaterialAlertDialogBuilder(context)
                         .setMessage(message)
                         .setCancelable(false)
@@ -302,6 +328,13 @@ public class NinjaWebView extends FrameLayout implements AlbumController {
             @Override
             public void onJsPrompt(String message, String defaultValue,
                     BrowserEngineClient.PromptResult result) {
+                if (context instanceof Activity) {
+                    Activity a = (Activity) context;
+                    if (a.isFinishing() || a.isDestroyed()) {
+                        result.cancel();
+                        return;
+                    }
+                }
                 final TextInputEditText input = new TextInputEditText(context);
                 input.setText(defaultValue);
                 new MaterialAlertDialogBuilder(context)
@@ -371,6 +404,10 @@ public class NinjaWebView extends FrameLayout implements AlbumController {
 
     public static BrowserController getBrowserController() {
         return browserController;
+    }
+
+    public static void clearBrowserController() {
+        browserController = null;
     }
 
     public void setBrowserController(BrowserController controller) {
@@ -667,6 +704,7 @@ public class NinjaWebView extends FrameLayout implements AlbumController {
         engine.destroy();
         removeAllViews();
         homePageView = null;
+        favicon = null;
     }
 
     public void onPause()  { engine.onPause();  }
@@ -767,7 +805,7 @@ public class NinjaWebView extends FrameLayout implements AlbumController {
                 .putBoolean("profileChanged_fingerPrintProtection",
                         sp.getBoolean("profileStandard_fingerPrintProtection", true))
                 .putBoolean("profileChanged_cookies",
-                        sp.getBoolean("_cookies", false))
+                        sp.getBoolean("profileStandard_cookies", false))
                 .putBoolean("profileChanged_cookiesThirdParty",
                         sp.getBoolean("profileStandard_cookiesThirdParty", false))
                 .putBoolean("profileChanged_deny_cookie_banners",
@@ -819,6 +857,11 @@ public class NinjaWebView extends FrameLayout implements AlbumController {
      * {@link WebViewEngine} fires when tracking params are detected.
      */
     private void handleTrackingDialog(String syntheticUrl) {
+        if (context instanceof Activity) {
+            Activity a = (Activity) context;
+            if (a.isFinishing() || a.isDestroyed()) return;
+        }
+
         Uri parsed   = Uri.parse(syntheticUrl);
         String url   = parsed.getQueryParameter("url");
         String clean = parsed.getQueryParameter("clean");
@@ -833,7 +876,7 @@ public class NinjaWebView extends FrameLayout implements AlbumController {
 
         View dialogView = View.inflate(context, R.layout.dialog_menu, null);
         MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(context);
-        String tracking = finalUrl.substring(finalUrl.lastIndexOf("?"));
+        String tracking = finalUrl.contains("?") ? finalUrl.substring(finalUrl.lastIndexOf("?")) : "";
         String msg = context.getString(R.string.dialog_tracking) + " \"" + tracking + "\"?";
         if (msg.length() > 150) msg = msg.substring(0, 150) + " [...]?\"";
 
@@ -887,6 +930,11 @@ public class NinjaWebView extends FrameLayout implements AlbumController {
      * {@link WebViewEngine} fires for plain-HTTP URLs.
      */
     private void handleHttpDialog(String syntheticUrl) {
+        if (context instanceof Activity) {
+            Activity a = (Activity) context;
+            if (a.isFinishing() || a.isDestroyed()) return;
+        }
+
         Uri parsed = Uri.parse(syntheticUrl);
         String url = parsed.getQueryParameter("url");
         if (url == null) return;
