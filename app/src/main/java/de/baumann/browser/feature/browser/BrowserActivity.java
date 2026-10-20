@@ -912,6 +912,11 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
         });
 
 
+        FloatingActionButton fab_plus = findViewById(R.id.fab_plus);
+        if (fab_plus != null) {
+            fab_plus.setOnClickListener(v -> addAlbum(getString(R.string.home), BrowserUnit.URL_HOME, true));
+        }
+
         fab_menu = findViewById(R.id.fab_menu);
         fab_menu.setOnClickListener(view -> showOverflow(null, null, 0, ninjaWebView.getTitle(), ninjaWebView.getUrl(), null, null, 0));
         fab_menu.setOnLongClickListener(view -> {
@@ -1334,11 +1339,7 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
                 ninjaWebView.loadUrl(favURL);
             } else if (resId == R.drawable.icon_tab_plus) {
                 if (hideMenu == 2) { dialog.cancel(); }
-                if (hideMenu == 0) {
-                    addAlbum(getString(R.string.home), BrowserUnit.URL_HOME, true);
-                } else {
-                    addAlbum(HelperUnit.domain(url), url, true);
-                }
+                addAlbum(getString(R.string.home), BrowserUnit.URL_HOME, true);
             } else if (resId == R.drawable.icon_tab_background) {
                 addAlbum(HelperUnit.domain(url), url, false);
             } else if (resId == R.drawable.icon_refresh) {
