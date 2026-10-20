@@ -315,7 +315,19 @@ public class HelperUnit {
             }
         }
 
-        if (list.isEmpty()) {
+        if (!list.isEmpty()) {
+            boolean hasHome = false;
+            for (MenuItem item : list) {
+                if (context.getString(R.string.home).equals(item.getTitle())) {
+                    hasHome = true;
+                    break;
+                }
+            }
+            if (!hasHome) {
+                list.add(0, new MenuItem(context.getString(R.string.home), R.drawable.icon_home_nav, true));
+            }
+        } else {
+            list.add(new MenuItem(context.getString(R.string.home), R.drawable.icon_home_nav, true));
             list.add(new MenuItem(context.getString(R.string.menu_openFav), R.drawable.icon_fav, true));
             list.add(new MenuItem(context.getString(R.string.menu_fav), R.drawable.icon_fav_plus, true));
             list.add(new MenuItem(context.getString(R.string.main_menu_new_tabOpen), R.drawable.icon_tab_plus, true));

@@ -159,4 +159,18 @@
     <string name="menu_delete_entry">Delete entry</string>
     <string name="app_intro_a">Thanks for using FOSS Browser!</string>
     <string name="app_intro_b">The currently opened website is the WIKI of FOSS Browser. This site is also saved as your first Bookmark. On the WIKI you can find helpful tips and links.</string>
+
+    <!-- Home Page -->
+    <string name="home">Home</string>
+    <string name="home_search_hint">Search or enter address</string>
+    <string name="home_shortcuts">Shortcuts</string>
+    <string name="home_add_shortcut">Add</string>
+    <string name="home_remove_shortcut">Remove shortcut</string>
+    <string name="home_open_new_tab">Open in new tab</string>
+    <string name="home_choose_bookmark">Choose a bookmark</string>
+    <string name="home_no_bookmarks">No bookmarks found. Save bookmarks while browsing to add them to your home page.</string>
+    <string name="home_add_custom">Add URL</string>
+    <string name="home_added">Added to Home</string>
+    <string name="home_removed">Shortcut removed</string>
+    <string name="home_subtitle">Fast, private &amp; open source</string>
 </resources>

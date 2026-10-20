@@ -55,6 +55,10 @@ public class FaviconHelper extends SQLiteOpenHelper {
 
     public static void setFavicon(Context context, View view, String url, int id, int idImage) {
         ImageView faviconView = view.findViewById(id);
+        if (url != null && (BrowserUnit.URL_HOME.equals(url) || "foss://home".equals(url))) {
+            if (faviconView != null) faviconView.setImageResource(R.drawable.icon_home_nav);
+            return;
+        }
         try(FaviconHelper faviconHelper = new FaviconHelper(context)) {
             Bitmap bitmap = faviconHelper.getFavicon(url);
             if (faviconView != null) {

@@ -97,6 +97,9 @@ public class NinjaWebView extends FrameLayout implements AlbumController {
     private static BrowserController browserController = null;
     private static SharedPreferences sp;
 
+    private HomePageView homePageView;
+    private boolean isHomePage = false;
+
     private final BrowserEngine engine;
     private Bitmap favicon;
 
@@ -188,7 +191,7 @@ public class NinjaWebView extends FrameLayout implements AlbumController {
                     browserController.updateProgress(BrowserUnit.LOADING_STOPPED);
                 album.setAlbumTitle(title, url);
                 // Save history
-                if (history && url != null && !url.equals("about:blank")) {
+                if (history && url != null && !url.equals("about:blank") && !url.equals(BrowserUnit.URL_HOME) && !url.equals("foss://home")) {
                     RecordAction action = new RecordAction(context);
                     action.open(true);
                     action.addHistory(new Record(title, url, 0, 0));
@@ -357,7 +360,68 @@ public class NinjaWebView extends FrameLayout implements AlbumController {
         if (album != null) album.setBrowserController(controller);
     }
 
-    // ── Navigation (delegated to engine) ─────────────────────────────────
+    // ── Navigation (delegated to engine or home page) ───────────────────
+
+    public boolean isHomePage() {
+        return isHomePage;
+    }
+
+    private boolean isHomeUrl(String url) {
+        if (url == null) return true;
+        String clean = url.trim();
+        return clean.isEmpty()
+                || BrowserUnit.URL_HOME.equalsIgnoreCase(clean)
+                || "foss://home".equalsIgnoreCase(clean);
+    }
+
+    private void showHomePage() {
+        isHomePage = true;
+        if (homePageView == null) {
+            homePageView = new HomePageView(context);
+            homePageView.setCallback(new HomePageView.HomePageCallback() {
+                @Override
+                public void onUrlRequested(String targetUrl) {
+                    loadUrl(targetUrl);
+                }
+
+                @Override
+                public void onNewTabRequested(String targetUrl) {
+                    if (browserController != null) {
+                        browserController.openNewTab(targetUrl);
+                    }
+                }
+
+                @Override
+                public void onSearchRequested() {
+                    if (browserController != null) {
+                        browserController.showSearchDialog();
+                    }
+                }
+            });
+            FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT);
+            addView(homePageView, lp);
+        }
+        homePageView.setVisibility(View.VISIBLE);
+        homePageView.refreshShortcuts();
+        engine.getView().setVisibility(View.GONE);
+
+        if (album != null) {
+            album.setAlbumTitle(context.getString(R.string.home), BrowserUnit.URL_HOME);
+        }
+        if (browserController != null) {
+            browserController.updateProgress(BrowserUnit.LOADING_STOPPED);
+        }
+    }
+
+    private void hideHomePage() {
+        isHomePage = false;
+        if (homePageView != null) {
+            homePageView.setVisibility(View.GONE);
+        }
+        engine.getView().setVisibility(View.VISIBLE);
+    }
 
     @SuppressLint("ApplySharedPref")
     public synchronized void loadUrl(@NonNull String url) {
@@ -367,39 +431,79 @@ public class NinjaWebView extends FrameLayout implements AlbumController {
         if (imm != null) imm.hideSoftInputFromWindow(getWindowToken(), 0);
 
         stopped = false;
+
+        if (isHomeUrl(url)) {
+            showHomePage();
+            return;
+        }
+
+        hideHomePage();
         engine.loadUrl(url);
     }
 
     public synchronized void reload() {
         stopped = false;
-        engine.reload();
+        if (isHomePage) {
+            if (homePageView != null) {
+                homePageView.refreshShortcuts();
+            }
+        } else {
+            engine.reload();
+        }
     }
 
     public synchronized void goBack() {
-        engine.goBack();
+        if (!isHomePage) {
+            if (engine.canGoBack()) {
+                engine.goBack();
+            } else {
+                loadUrl(BrowserUnit.URL_HOME);
+            }
+        }
     }
 
     public void goForward() {
-        engine.goForward();
+        if (!isHomePage) {
+            engine.goForward();
+        }
     }
 
     public boolean canGoBack() {
+        if (isHomePage) {
+            return false;
+        }
         return engine.canGoBack();
     }
 
     public boolean canGoForward() {
+        if (isHomePage) {
+            return false;
+        }
         return engine.canGoForward();
     }
 
     public synchronized void stopLoading() {
         stopped = true;
-        engine.stopLoading();
+        if (!isHomePage) {
+            engine.stopLoading();
+        }
     }
 
-    // ── State (delegated to engine) ───────────────────────────────────────
+    // ── State (delegated to engine or home page) ─────────────────────────
 
-    public String getUrl()   { return engine.getUrl();   }
-    public String getTitle() { return engine.getTitle(); }
+    public String getUrl() {
+        if (isHomePage) {
+            return BrowserUnit.URL_HOME;
+        }
+        return engine.getUrl();
+    }
+
+    public String getTitle() {
+        if (isHomePage) {
+            return context.getString(R.string.home);
+        }
+        return engine.getTitle();
+    }
 
     @Nullable
     public Bitmap getFavicon() {
@@ -441,14 +545,22 @@ public class NinjaWebView extends FrameLayout implements AlbumController {
     public synchronized void activate() {
         requestFocus();
         album.activate();
-        engine.activate();
+        if (isHomePage) {
+            if (homePageView != null) {
+                homePageView.refreshShortcuts();
+            }
+        } else {
+            engine.activate();
+        }
     }
 
     @Override
     public synchronized void deactivate() {
         clearFocus();
         album.deactivate();
-        engine.deactivate();
+        if (!isHomePage) {
+            engine.deactivate();
+        }
     }
 
     // ── Title / favicon updates ───────────────────────────────────────────

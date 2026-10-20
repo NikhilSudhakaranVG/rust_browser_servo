@@ -76,6 +76,7 @@ public class Settings_Menu extends AppCompatActivity {
                 else if (aktuellerTitel.equals(getString(R.string.menu_delete_entry))) {item.setIconResId(R.drawable.icon_delete_alt);}
                 else if (aktuellerTitel.equals(getString(R.string.app_help))) {item.setIconResId(R.drawable.icon_help);}
                 else if (aktuellerTitel.equals(getString(R.string.menu_fav))) {item.setIconResId(R.drawable.icon_fav_plus);}
+                else if (aktuellerTitel.equals(getString(R.string.home))) {item.setIconResId(R.drawable.icon_home_nav);}
             }
         }
         adapter = new AdapterSettingsMenu(masterList);

@@ -50,13 +50,14 @@ public class BrowserUnit {
     public static final int LOADING_STOPPED = 101;  //Must be > PROGRESS_MAX !
     public static final String MIME_TYPE_TEXT_PLAIN = "text/plain";
     public static final String URL_ENCODING = "UTF-8";
+    public static final String URL_HOME = "about:home";
 
     public static boolean isURL(String urlString) {
         if (urlString == null || urlString.trim().isEmpty()) {
             return false;
         }
         urlString = urlString.trim();
-        if ("about:blank".equalsIgnoreCase(urlString)) {
+        if ("about:blank".equalsIgnoreCase(urlString) || URL_HOME.equalsIgnoreCase(urlString) || "foss://home".equalsIgnoreCase(urlString)) {
             return true;
         }
         try {
@@ -84,7 +85,7 @@ public class BrowserUnit {
         }
 
         if (isURL(query) || query.isEmpty()) {
-            if (query.startsWith("about:blank") || query.startsWith("mailto:")) {
+            if (query.startsWith("about:blank") || query.startsWith(URL_HOME) || query.startsWith("foss://home") || query.startsWith("mailto:")) {
                 return query;
             }
             if (!query.contains("://")) {

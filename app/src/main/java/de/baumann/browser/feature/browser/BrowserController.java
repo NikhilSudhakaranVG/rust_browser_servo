@@ -29,4 +29,6 @@ public interface BrowserController {
     void showDialogFastToggle(String title, String url, FloatingActionButton floatingActionButton);
     void setProfileIcon (FloatingActionButton floatingActionButton, String url);
     void showOverflow(Dialog dialog, View view, int hideMenu, String title, String url, final AdapterRecord adapterRecord, List<Record> recordList, int location);
+    void showSearchDialog();
+    void openNewTab(String url);
 }

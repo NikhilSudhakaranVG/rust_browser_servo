@@ -247,4 +247,76 @@ public class RecordAction {
         action.close();
         return list;
     }
+
+    public void addStart(Record record) {
+        if (record == null
+                || record.getTitle() == null
+                || record.getTitle().trim().isEmpty()
+                || record.getURL() == null
+                || record.getURL().trim().isEmpty()) {
+            return;
+        }
+        boolean autoClose = false;
+        if (database == null || !database.isOpen()) {
+            open(true);
+            autoClose = true;
+        }
+        if (!checkUrl(record.getURL().trim(), RecordUnit.TABLE_START)) {
+            ContentValues values = new ContentValues();
+            values.put(RecordUnit.COLUMN_TITLE, record.getTitle().trim());
+            values.put(RecordUnit.COLUMN_URL, record.getURL().trim());
+            values.put(RecordUnit.COLUMN_ORDINAL, System.currentTimeMillis());
+            database.insert(RecordUnit.TABLE_START, null, values);
+        }
+        if (autoClose) {
+            close();
+        }
+    }
+
+    public List<Record> listStart() {
+        boolean autoClose = false;
+        if (database == null || !database.isOpen()) {
+            open(false);
+            autoClose = true;
+        }
+        List<Record> list = new LinkedList<>();
+        Cursor cursor = database.query(
+                RecordUnit.TABLE_START,
+                new String[]{
+                        RecordUnit.COLUMN_TITLE,
+                        RecordUnit.COLUMN_URL,
+                        RecordUnit.COLUMN_ORDINAL
+                },
+                null,
+                null,
+                null,
+                null,
+                RecordUnit.COLUMN_ORDINAL + " ASC"
+        );
+        cursor.moveToFirst();
+        while (!cursor.isAfterLast()) {
+            Record record = new Record();
+            record.setTitle(cursor.getString(0));
+            record.setURL(cursor.getString(1));
+            list.add(record);
+            cursor.moveToNext();
+        }
+        cursor.close();
+        if (autoClose) {
+            close();
+        }
+        return list;
+    }
+
+    public void deleteStart(String url) {
+        boolean autoClose = false;
+        if (database == null || !database.isOpen()) {
+            open(true);
+            autoClose = true;
+        }
+        deleteURL(url, RecordUnit.TABLE_START);
+        if (autoClose) {
+            close();
+        }
+    }
 }
