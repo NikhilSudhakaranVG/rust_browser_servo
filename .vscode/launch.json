@@ -1,9 +1,16 @@
 {
-    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Launch & Debug (Physical Device)",
+            "name": "Run on Physical Device (F5)",
+            "type": "node",
+            "request": "launch",
+            "program": "${workspaceFolder}/.vscode/run.js",
+            "preLaunchTask": "Install & Run on Device",
+            "console": "internalConsole"
+        },
+        {
+            "name": "Debug with Android Extension (Requires Window Reload)",
             "type": "android",
             "request": "launch",
             "target": "R9ZX205NJAK",
@@ -17,13 +24,6 @@
             "request": "attach",
             "target": "R9ZX205NJAK",
             "processId": "de.baumann.browser"
-        },
-        {
-            "name": "Inspect WebView (Chrome DevTools)",
-            "type": "chrome",
-            "request": "attach",
-            "port": 9222,
-            "webRoot": "${workspaceFolder}"
         }
     ]
 }
