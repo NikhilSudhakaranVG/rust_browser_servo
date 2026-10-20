@@ -2,7 +2,7 @@
 <img src="fastlane/metadata/android/en-US/images/featuresGraphic.png" alt="FOSS Browser" width="600"/>
 </p>
 
-__[README](README.md)__ | __[WIKI](wiki/)__ | __[FAQs](FAQs.md)__ | __[Changelog](CHANGELOG.md)__ | __[Privacy](PRIVACY.md)__ | __[License](LICENSE.md)__ | __[Code of conduct](CODE_OF_CONDUCT.md)__
+__[README](README.md)__ | __[WIKI](wiki/)__ | __[Security](security/SECURITY.md)__ | __[FAQs](FAQs.md)__ | __[Changelog](CHANGELOG.md)__ | __[Privacy](PRIVACY.md)__ | __[License](LICENSE.md)__ | __[Code of conduct](CODE_OF_CONDUCT.md)__
 
 ----
 
@@ -102,6 +102,24 @@ FOSS Browser decouples UI controls from the underlying rendering engine using a 
 
 ----
 
+### Security Architecture & Audit
+
+FOSS Browser incorporates a defense-in-depth security model verified by automated regression tests and security audits:
+
+- **Security Documentation Hub**:
+  - [Security Policy & Vulnerability Disclosure](security/SECURITY.md): Reporting process, response SLAs, and supported versions.
+  - [Six-Month Security Audit Report (2026)](security/AUDIT_REPORT_2026.md): Full audit findings, upstream Servo assessment, and resolved vulnerabilities.
+  - [Architectural Remediation Plan](security/REMEDIATION_PLAN.md): Step-by-step security enhancements and verification status.
+  - [Threat Model & Isolation Architecture](security/THREAT_MODEL.md): Trust boundaries, threat actors, and security invariants.
+- **Per-Origin Web Permissions**: Explicit interactive confirmation dialogs for Camera, Microphone, and Location access with site memory — [`NinjaWebView.java`](app/src/main/java/de/baumann/browser/feature/browser/NinjaWebView.java).
+- **Incognito Multi-Profile Isolation**: AndroidX WebKit Multi-Profile (`WebViewFeature.MULTI_PROFILE`) assigns incognito tabs to a separate, isolated profile with zero disk persistence — [`WebViewEngine.java`](app/src/main/java/de/baumann/browser/feature/browser/engine/WebViewEngine.java).
+- **Network Security Configuration**: Cleartext traffic strictly anchored to system CAs and HTTPS enforced for filter list downloads — [`network_security_config.xml`](app/src/main/res/common/xml/network_security_config.xml), [`AdBlock.java`](app/src/main/java/de/baumann/browser/feature/browser/AdBlock.java).
+- **Hardened Error Handling & Navigation**: SSL errors default to secure abort; dangerous schemes (`file:`, `content:`, `javascript:`) are filtered from intent launching — [`NinjaWebView.java`](app/src/main/java/de/baumann/browser/feature/browser/NinjaWebView.java).
+- **Data Integrity & Injection Defenses**: Parameterized SQL queries in [`RecordAction.java`](app/src/main/java/de/baumann/browser/feature/data/RecordAction.java), Zip Slip traversal defenses in [`BackupUtils.java`](app/src/main/java/de/baumann/browser/feature/settings/BackupUtils.java), and DOM XSS escaping in [`BrowserActivity.java`](app/src/main/java/de/baumann/browser/feature/browser/BrowserActivity.java).
+- **Regression Test Suite**: Automated unit tests verifying path traversal prevention, HTTPS enforcement, and scheme isolation — [`SecurityRegressionTest.java`](app/src/test/java/de/baumann/browser/feature/security/SecurityRegressionTest.java).
+
+----
+
 ### Project Structure & Key Files
 
 ```
@@ -157,6 +175,15 @@ app/src/main/java/de/baumann/browser/feature/
     ├── DeleteUtils.java              # Automated database and cache cleaner
     ├── CustomSearchesHelper.java     # Custom search engines persistence
     └── CustomRedirectsHelper.java    # Custom URL redirects persistence
+
+security/
+├── SECURITY.md                       # Security policy, supported versions & disclosure guidelines
+├── AUDIT_REPORT_2026.md              # Six-month security audit findings, CVEs & resolved issues
+├── REMEDIATION_PLAN.md               # Architecture remediation plan and verification status
+└── THREAT_MODEL.md                   # Threat actors, trust boundaries & isolation guarantees
+
+app/src/test/java/de/baumann/browser/feature/security/
+└── SecurityRegressionTest.java       # Unit tests for Zip Slip, HTTPS checks & scheme blocking
 ```
 
 ----
