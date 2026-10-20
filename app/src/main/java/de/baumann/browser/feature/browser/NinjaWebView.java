@@ -33,6 +33,7 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.FrameLayout;
 import android.widget.GridView;
 import android.widget.LinearLayout;
@@ -51,6 +52,7 @@ import com.google.android.material.textfield.TextInputEditText;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import de.baumann.browser.R;
 
@@ -377,22 +379,102 @@ public class NinjaWebView extends FrameLayout implements AlbumController {
             @Override
             public void onPermissionRequest(String resource, String origin,
                     Runnable grant, Runnable deny) {
-                // Auto-grant based on profile settings (camera, location, mic)
                 SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
                 String profile = prefs.getString("profile", "profileStandard");
-                boolean shouldGrant = false;
+                boolean enabledInProfile = false;
+                String resourceKey;
+                String resourceLabel;
                 switch (resource) {
                     case BrowserEngineClient.PERMISSION_CAMERA:
-                        shouldGrant = prefs.getBoolean(profile + "_camera", false);
+                        enabledInProfile = prefs.getBoolean(profile + "_camera", false);
+                        resourceKey = "camera";
+                        resourceLabel = "camera";
                         break;
                     case BrowserEngineClient.PERMISSION_MICROPHONE:
-                        shouldGrant = prefs.getBoolean(profile + "_microphone", false);
+                        enabledInProfile = prefs.getBoolean(profile + "_microphone", false);
+                        resourceKey = "microphone";
+                        resourceLabel = "microphone";
                         break;
                     case BrowserEngineClient.PERMISSION_GEOLOCATION:
-                        shouldGrant = prefs.getBoolean(profile + "_location", false);
+                        enabledInProfile = prefs.getBoolean(profile + "_location", false);
+                        resourceKey = "location";
+                        resourceLabel = "location";
                         break;
+                    default:
+                        deny.run();
+                        return;
                 }
-                if (shouldGrant) grant.run(); else deny.run();
+
+                if (!enabledInProfile) {
+                    deny.run();
+                    return;
+                }
+
+                String originKey = (origin != null && !origin.trim().isEmpty())
+                        ? origin.trim().toLowerCase(java.util.Locale.ROOT)
+                        : "unknown";
+                String permPrefKey = "web_perm_" + originKey + "_" + resourceKey;
+                String savedDecision = prefs.getString(permPrefKey, null);
+                if ("allow".equals(savedDecision)) {
+                    grant.run();
+                    return;
+                } else if ("deny".equals(savedDecision)) {
+                    deny.run();
+                    return;
+                }
+
+                AtomicBoolean responded = new AtomicBoolean(false);
+                Runnable safeGrant = () -> {
+                    if (responded.compareAndSet(false, true)) {
+                        grant.run();
+                    }
+                };
+                Runnable safeDeny = () -> {
+                    if (responded.compareAndSet(false, true)) {
+                        deny.run();
+                    }
+                };
+
+                if (!(context instanceof Activity activity) || activity.isFinishing() || activity.isDestroyed()) {
+                    safeDeny.run();
+                    return;
+                }
+
+                activity.runOnUiThread(() -> {
+                    if (activity.isFinishing() || activity.isDestroyed()) {
+                        safeDeny.run();
+                        return;
+                    }
+
+                    CheckBox rememberBox = new CheckBox(context);
+                    rememberBox.setText("Remember for this site");
+                    int paddingDp = (int) (16 * context.getResources().getDisplayMetrics().density);
+                    rememberBox.setPadding(paddingDp, paddingDp / 2, paddingDp, paddingDp / 2);
+
+                    String displayOrigin = (origin != null && !origin.trim().isEmpty()) ? origin : "This website";
+                    String message = displayOrigin + " requests access to your " + resourceLabel + ".\n\nDo you want to grant access?";
+
+                    new MaterialAlertDialogBuilder(context)
+                            .setTitle(R.string.app_name)
+                            .setMessage(message)
+                            .setView(rememberBox)
+                            .setCancelable(true)
+                            .setPositiveButton(R.string.app_ok, (d, w) -> {
+                                if (rememberBox.isChecked()) {
+                                    prefs.edit().putString(permPrefKey, "allow").apply();
+                                }
+                                safeGrant.run();
+                            })
+                            .setNegativeButton(R.string.app_cancel, (d, w) -> {
+                                if (rememberBox.isChecked()) {
+                                    prefs.edit().putString(permPrefKey, "deny").apply();
+                                }
+                                safeDeny.run();
+                            })
+                            .setOnCancelListener(d -> safeDeny.run())
+                            .setOnDismissListener(d -> safeDeny.run())
+                            .show();
+                });
             }
 
             @Override

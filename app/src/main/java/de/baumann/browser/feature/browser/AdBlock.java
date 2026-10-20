@@ -133,6 +133,12 @@ public class AdBlock {
             SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(context);
             String hostURL = sp.getString("ab_hosts", "https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts");
 
+            if (!isHostUrlSafe(hostURL)) {
+                Log.w("browser", "AdBlock hosts URL rejected: must use HTTPS protocol: " + hostURL);
+                isUpdating.set(false);
+                return;
+            }
+
             File tempFile = new File(context.getDir("filesdir", Context.MODE_PRIVATE) + "/temp_hosts.txt");
             File outFile = new File(context.getDir("filesdir", Context.MODE_PRIVATE) + "/" + FILE);
 
@@ -215,6 +221,14 @@ public class AdBlock {
         while ((read = in.read(buffer)) != -1) {
             out.write(buffer, 0, read);
         }
+    }
+
+    public static boolean isHostUrlSafe(String hostUrl) {
+        if (hostUrl == null) {
+            return false;
+        }
+        String trimmed = hostUrl.trim().toLowerCase(Locale.ROOT);
+        return trimmed.startsWith("https://") && trimmed.length() > 8;
     }
 
     public boolean isAd(String url) {

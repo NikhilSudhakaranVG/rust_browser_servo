@@ -30,9 +30,13 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
+import android.util.Log;
 import androidx.annotation.Nullable;
 import androidx.preference.PreferenceManager;
+import androidx.webkit.Profile;
+import androidx.webkit.ProfileStore;
 import androidx.webkit.WebSettingsCompat;
+import androidx.webkit.WebViewCompat;
 import androidx.webkit.WebViewFeature;
 
 import java.io.ByteArrayInputStream;
@@ -270,6 +274,8 @@ public class WebViewEngine implements BrowserEngine {
 
     // ── BrowserEngine: Settings & Incognito ───────────────────────────────
 
+    public static final String INCOGNITO_PROFILE_NAME = "incognito_profile";
+
     @Override
     public void setIncognito(boolean incognito) {
         this.isIncognito = incognito;
@@ -278,9 +284,25 @@ public class WebViewEngine implements BrowserEngine {
             ws.setSaveFormData(false);
             ws.setCacheMode(WebSettings.LOAD_NO_CACHE);
             ws.setGeolocationEnabled(false);
+            if (WebViewFeature.isFeatureSupported(WebViewFeature.MULTI_PROFILE)) {
+                try {
+                    ProfileStore store = ProfileStore.getInstance();
+                    store.getOrCreateProfile(INCOGNITO_PROFILE_NAME);
+                    WebViewCompat.setProfile(webView, INCOGNITO_PROFILE_NAME);
+                } catch (Exception e) {
+                    Log.w("WebViewEngine", "Failed to assign incognito profile", e);
+                }
+            }
         } else {
             ws.setSaveFormData(true);
             ws.setCacheMode(WebSettings.LOAD_DEFAULT);
+            if (WebViewFeature.isFeatureSupported(WebViewFeature.MULTI_PROFILE)) {
+                try {
+                    WebViewCompat.setProfile(webView, Profile.DEFAULT_PROFILE_NAME);
+                } catch (Exception e) {
+                    Log.w("WebViewEngine", "Failed to assign default profile", e);
+                }
+            }
         }
     }
 
@@ -352,7 +374,13 @@ public class WebViewEngine implements BrowserEngine {
 
         // Cookies
         try {
-            CookieManager mgr = CookieManager.getInstance();
+            CookieManager mgr;
+            if (isIncognito && WebViewFeature.isFeatureSupported(WebViewFeature.MULTI_PROFILE)) {
+                Profile profileObj = ProfileStore.getInstance().getOrCreateProfile(INCOGNITO_PROFILE_NAME);
+                mgr = profileObj.getCookieManager();
+            } else {
+                mgr = CookieManager.getInstance();
+            }
             boolean acceptCookies = !isIncognito && sp.getBoolean(effectiveProfile + "_cookies", true);
             mgr.setAcceptCookie(acceptCookies);
             mgr.setAcceptThirdPartyCookies(
@@ -443,6 +471,13 @@ public class WebViewEngine implements BrowserEngine {
                 webView.clearCache(true);
                 webView.clearFormData();
                 webView.clearSslPreferences();
+                if (WebViewFeature.isFeatureSupported(WebViewFeature.MULTI_PROFILE)) {
+                    Profile incognitoProfile = ProfileStore.getInstance().getProfile(INCOGNITO_PROFILE_NAME);
+                    if (incognitoProfile != null) {
+                        incognitoProfile.getCookieManager().removeAllCookies(null);
+                        incognitoProfile.getWebStorage().deleteAllData();
+                    }
+                }
             } catch (Exception ignored) {}
         }
         webView.setWebViewClient(new WebViewClient());

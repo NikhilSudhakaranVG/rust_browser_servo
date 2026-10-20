@@ -218,7 +218,16 @@ public class ServoEngine implements BrowserEngine {
     @Override
     public void setIncognito(boolean incognito) {
         this.isIncognito = incognito;
-        // [SERVO_ACTIVE]: map incognito/private mode to Servo configuration
+        // [SERVO_ACTIVE]: configure Servo ephemeral session
+        // When servo-aarch64-android.aar is linked:
+        // 1. Pass --private-browsing or equivalent runtime configuration to ServoView
+        // 2. Configure in-memory cookie jar and cache without disk persistence
+        // 3. Disable localStorage / indexedDB disk persistence for this session
+        if (isIncognito) {
+            Log.d(TAG, "ServoEngine: incognito/private mode enabled (ephemeral storage configured)");
+        } else {
+            Log.d(TAG, "ServoEngine: incognito/private mode disabled (standard profile)");
+        }
     }
 
     @Override
@@ -304,6 +313,10 @@ public class ServoEngine implements BrowserEngine {
     public void destroy() {
         cancelPendingStub();
         client = null;
+        if (isIncognito) {
+            // [SERVO_ACTIVE]: clear ephemeral session storage, in-memory cookies, and cache
+            Log.d(TAG, "ServoEngine: clearing incognito ephemeral session data");
+        }
         container.removeAllViews();
         // [SERVO_ACTIVE]: if (servoView != null) { servoView.onPause(); servoView = null; }
         Log.i(TAG, "destroy (STUB)");

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!--
+      Base configuration:
+      Permits cleartext HTTP traffic for user web browsing sessions,
+      while enforcing system-trusted certificate authorities and disallowing
+      untrusted user-installed certificates by default.
+    -->
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>
