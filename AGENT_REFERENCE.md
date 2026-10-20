@@ -90,7 +90,7 @@ Because Servo exposes a `SurfaceView`/OpenGL-based interface rather than extendi
 - **`AdapterTabs.java`**: Added `isForeground()` tracking field and getter; updated `activate()`/`deactivate()` to update foreground state.
 - **`BrowserUnit.java`**: Updated `openInBackground(Activity, View)` to accept generic `View` (supporting both `NinjaWebView` and `WebView`) and properly extract URLs.
 - **`AdBlock.java`**: Changed visibility of `isAd(String url)` to `public` so it can be called by engine packages.
-- **`NinjaWebChromeClient.java`**: Updated `onCreateWindow` transport binding to use the underlying `WebView` from `newWebView.getWebView()`.
+- **Legacy Cleanup**: Removed superseded `NinjaWebViewClient.java`, `NinjaWebChromeClient.java`, and `WebAppInterface.java` whose logic now lives in `WebViewEngine` and `BrowserEngineClient`.
 
 ---
 
@@ -106,8 +106,8 @@ Because Servo exposes a `SurfaceView`/OpenGL-based interface rather than extendi
 | **Phase 3** | `ServoEngine.java` | ✅ DONE (Stub/Active hooks) | Fully structured, compiles cleanly |
 | **Phase 4** | `NinjaWebView.java` | ✅ DONE | FrameLayout composition model with full delegation |
 | **Phase 4** | `AdapterTabs.java` | ✅ DONE | Added `isForeground()` tracking |
-| **Phase 5** | Interop Fixes (`AdBlock`, `BrowserUnit`, `NinjaWebChromeClient`) | ✅ DONE | Package access & signature alignments resolved |
-| **Phase 6** | Build & Compilation Verification | ✅ DONE | `compileDebugJavaWithJavac` and `assembleDebug` passing |
+| **Phase 5** | Interop Fixes (`AdBlock`, `BrowserUnit`) & Legacy Cleanup | ✅ DONE | Removed obsolete `NinjaWebViewClient`, `NinjaWebChromeClient`, `WebAppInterface` |
+| **Phase 6** | Build & Compilation Verification | ✅ DONE | Full recompilation and `assembleDebug` passing |
 | **Phase 7** | AAR Download & Live Activation | ⏳ NEXT STEP | Place `servo-aarch64-android.aar` in `servoview-local/` |
 
 ---
