@@ -203,7 +203,7 @@ public class AdBlock {
         }
     }
 
-    boolean isAd(String url) {
+    public boolean isAd(String url) {
         String domain;
         try {
             domain = getDomain(url);

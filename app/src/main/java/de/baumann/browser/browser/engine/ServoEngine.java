@@ -4,7 +4,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.util.Log;
-import android.view.FrameLayout;
+import android.widget.FrameLayout;
 import android.view.View;
 import android.webkit.ValueCallback;
 

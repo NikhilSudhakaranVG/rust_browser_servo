@@ -98,6 +98,10 @@ public class WebViewEngine implements BrowserEngine {
         return webView;
     }
 
+    public WebView getWebView() {
+        return webView;
+    }
+
     // ── BrowserEngine: Navigation ─────────────────────────────────────────
 
     @Override

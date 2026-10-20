@@ -121,7 +121,9 @@ public class NinjaWebChromeClient extends WebChromeClient {
         NinjaWebView newWebView = new NinjaWebView(context);
         view.addView(newWebView);
         WebView.WebViewTransport transport = (WebView.WebViewTransport) resultMsg.obj;
-        transport.setWebView(newWebView);
+        if (newWebView.getWebView() != null) {
+            transport.setWebView(newWebView.getWebView());
+        }
         resultMsg.sendToTarget();
         newWebView.setWebViewClient(new WebViewClient() {
             @Override

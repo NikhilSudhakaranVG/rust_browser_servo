@@ -14,8 +14,13 @@ import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
+import android.print.PrintDocumentAdapter;
 import android.webkit.ValueCallback;
+import android.webkit.WebBackForwardList;
 import android.webkit.WebChromeClient;
+import android.webkit.WebSettings;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.GridView;
@@ -90,8 +95,8 @@ public class NinjaWebView extends FrameLayout implements AlbumController {
     private static BrowserController browserController = null;
     private static SharedPreferences sp;
 
-    /** The active rendering engine — WebView or Servo. */
     private final BrowserEngine engine;
+    private Bitmap favicon;
 
     // ── Constructors ──────────────────────────────────────────────────────
 
@@ -213,10 +218,10 @@ public class NinjaWebView extends FrameLayout implements AlbumController {
 
             @Override
             public void onSslError(String url, BrowserEngineClient.SslErrorHandler handler) {
-                // Show the same SSL error dialog as before
+                // Show SSL error dialog
                 new MaterialAlertDialogBuilder(context)
-                        .setTitle(R.string.dialog_title_warning)
-                        .setMessage(context.getString(R.string.dialog_content_warning_ssl))
+                        .setTitle(R.string.app_error)
+                        .setMessage("SSL Certificate Error: " + url)
                         .setCancelable(false)
                         .setPositiveButton(R.string.app_ok, (d, w) -> handler.proceed())
                         .setNegativeButton(R.string.app_cancel, (d, w) -> handler.cancel())
@@ -378,7 +383,6 @@ public class NinjaWebView extends FrameLayout implements AlbumController {
         return engine.canGoForward();
     }
 
-    @Override
     public synchronized void stopLoading() {
         stopped = true;
         engine.stopLoading();
@@ -390,7 +394,13 @@ public class NinjaWebView extends FrameLayout implements AlbumController {
     public String getTitle() { return engine.getTitle(); }
 
     @Nullable
-    public Bitmap getFavicon() { return engine.getFavicon(); }
+    public Bitmap getFavicon() {
+        return favicon != null ? favicon : engine.getFavicon();
+    }
+
+    public void setFavicon(Bitmap favicon) {
+        this.favicon = favicon;
+    }
 
     // ── Preferences (called by engine client on page start) ───────────────
 
@@ -453,7 +463,6 @@ public class NinjaWebView extends FrameLayout implements AlbumController {
 
     // ── Lifecycle ─────────────────────────────────────────────────────────
 
-    @Override
     public synchronized void destroy() {
         stopLoading();
         engine.onPause();
@@ -463,6 +472,84 @@ public class NinjaWebView extends FrameLayout implements AlbumController {
 
     public void onPause()  { engine.onPause();  }
     public void onResume() { engine.onResume(); }
+
+    // ── Engine access & WebView compatibility methods ────────────────────
+
+    public BrowserEngine getEngine() {
+        return engine;
+    }
+
+    @Nullable
+    public WebView getWebView() {
+        if (engine instanceof WebViewEngine) {
+            return ((WebViewEngine) engine).getWebView();
+        }
+        return null;
+    }
+
+    public void setWebViewClient(WebViewClient client) {
+        WebView wv = getWebView();
+        if (wv != null) {
+            wv.setWebViewClient(client);
+        }
+    }
+
+    @Nullable
+    public WebSettings getSettings() {
+        WebView wv = getWebView();
+        return wv != null ? wv.getSettings() : null;
+    }
+
+    @Nullable
+    public WebView.HitTestResult getHitTestResult() {
+        WebView wv = getWebView();
+        return wv != null ? wv.getHitTestResult() : null;
+    }
+
+    @Nullable
+    public WebBackForwardList copyBackForwardList() {
+        WebView wv = getWebView();
+        return wv != null ? wv.copyBackForwardList() : null;
+    }
+
+    public boolean pageUp(boolean top) {
+        WebView wv = getWebView();
+        return wv != null && wv.pageUp(top);
+    }
+
+    public boolean pageDown(boolean bottom) {
+        WebView wv = getWebView();
+        return wv != null && wv.pageDown(bottom);
+    }
+
+    public void findNext(boolean forward) {
+        WebView wv = getWebView();
+        if (wv != null) {
+            wv.findNext(forward);
+        }
+    }
+
+    public void findAllAsync(String find) {
+        WebView wv = getWebView();
+        if (wv != null) {
+            wv.findAllAsync(find);
+        }
+    }
+
+    @Nullable
+    public PrintDocumentAdapter createPrintDocumentAdapter(String documentName) {
+        WebView wv = getWebView();
+        return wv != null ? wv.createPrintDocumentAdapter(documentName) : null;
+    }
+
+    public void loadDataWithBaseURL(String baseUrl, String data, String mimeType, String encoding, String historyUrl) {
+        WebView wv = getWebView();
+        if (wv != null) {
+            wv.loadDataWithBaseURL(baseUrl, data, mimeType, encoding, historyUrl);
+        } else if (data != null) {
+            engine.loadUrl("data:" + (mimeType != null ? mimeType : "text/html") + ";charset=" + (encoding != null ? encoding : "UTF-8") + "," + Uri.encode(data));
+        }
+    }
 
     // ── Profile helpers ───────────────────────────────────────────────────
 

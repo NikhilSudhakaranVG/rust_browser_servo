@@ -207,14 +207,19 @@ public class BrowserUnit {
         return url;
     }
 
-    public static void openInBackground(Activity activity, WebView webView) {
+    public static void openInBackground(Activity activity, android.view.View webView) {
         if (activity == null || webView == null) return;
         SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(activity);
         if (!sp.getBoolean("sp_tabBackground", false)) return;
         String dialogSetting = sp.getString("openBackground_dialog", "show");
         if ("never".equals(dialogSetting)) return;
         // Notification-Inhalt vorbereiten
-        String url = webView.getUrl();
+        String url = "";
+        if (webView instanceof de.baumann.browser.view.NinjaWebView) {
+            url = ((de.baumann.browser.view.NinjaWebView) webView).getUrl();
+        } else if (webView instanceof WebView) {
+            url = ((WebView) webView).getUrl();
+        }
         String text = activity.getString(R.string.dialog_backGround);
         NotificationManager mNotifyMgr = (NotificationManager) activity.getSystemService(Context.NOTIFICATION_SERVICE);
         // PendingIntent für Klick auf die Benachrichtigung
