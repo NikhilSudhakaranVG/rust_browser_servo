@@ -1,7 +1,6 @@
 package de.baumann.browser.feature.settings;
 import de.baumann.browser.feature.common.BrowserUnit;
 import de.baumann.browser.feature.common.HelperUnit;
-import de.baumann.browser.feature.dialogs.MenuItem;
 
 import de.baumann.browser.R;
 

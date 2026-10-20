@@ -5,7 +5,6 @@ import de.baumann.browser.feature.common.HelperUnit;
 import de.baumann.browser.feature.common.NinjaToast;
 import de.baumann.browser.feature.data.RecordAction;
 import de.baumann.browser.feature.data.RecordUnit;
-import de.baumann.browser.feature.dialogs.MenuItem;
 
 import static android.content.ContentValues.TAG;
 
