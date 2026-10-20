@@ -204,8 +204,7 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
     private TextInputEditText search_input;
     private TextView appBar_title;
     private EditText searchOnSiteInput;
-    @SuppressLint("StaticFieldLeak")
-    private static NinjaWebView ninjaWebView;
+    private NinjaWebView ninjaWebView;
     private View customView;
     private VideoView videoView;
     private FloatingActionButton fab_menu;
@@ -224,8 +223,8 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
     private BottomNavigationView bottom_navigation;
     private String overViewTab;
     private Activity activity;
-    @SuppressLint("StaticFieldLeak")
-    private static Context context;
+    private Context context;
+    private BroadcastReceiver downloadReceiver;
     private SharedPreferences sp;
     private List_standard listStandard;
     private long newIcon;
@@ -270,9 +269,26 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
             }
     );
 
+    private static Context appContext;
+    @SuppressLint("StaticFieldLeak")
+    private static View currentRootView;
+
     public static Context getAppContext() {
-        return context;
+        return appContext;
     }
+
+    public static View getView() {
+        return currentRootView;
+    }
+
+    private String getCurrentUrl() {
+        return (ninjaWebView != null) ? ninjaWebView.getUrl() : null;
+    }
+
+    private String getCurrentTitle() {
+        return (ninjaWebView != null && ninjaWebView.getTitle() != null) ? ninjaWebView.getTitle() : "";
+    }
+
     private AlertDialog dialogOverview;
 
     private AlertDialog dialog_overflow;
@@ -313,6 +329,7 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
 
         activity = BrowserActivity.this;
         context = BrowserActivity.this;
+        appContext = getApplicationContext();
         sp = PreferenceManager.getDefaultSharedPreferences(context);
         //noinspection InstantiationOfUtilityClass
         new BannerBlock(context);
@@ -341,6 +358,7 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
 
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_main);
+        currentRootView = findViewById(android.R.id.content);
         contentFrame = findViewById(R.id.main_content);
 
         WindowInsetsControllerCompat controller = WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
@@ -386,11 +404,12 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
         HelperUnit.setupDialog(context, dialogSearch);
         dialogSearch.show();
 
-        BroadcastReceiver downloadReceiver = new BroadcastReceiver() {
+        downloadReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
                 String text = getString(R.string.app_done) + ". " + getString(R.string.menu_download) +"?";
-                Snackbar snackbar = Snackbar.make(ninjaWebView, text, Snackbar.LENGTH_SHORT);
+                View anchor = (ninjaWebView != null) ? ninjaWebView : findViewById(android.R.id.content);
+                Snackbar snackbar = Snackbar.make(anchor, text, Snackbar.LENGTH_SHORT);
                 HelperUnit.makeSnackbarRound(snackbar);
                 snackbar.setAction(context.getString(R.string.app_ok), v -> startActivity(Intent.createChooser(new Intent(DownloadManager.ACTION_VIEW_DOWNLOADS), null)));
                 snackbar.show();
@@ -441,15 +460,15 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
             @Override
             public void handleOnBackPressed() {
                 if (fullscreenHolder != null || customView != null || videoView != null) {
-                    Log.v(TAG, "FOSS Browser in fullscreen mode");
+                    onHideCustomView();
                 } else if (searchOnSiteLayout.getVisibility() == VISIBLE){
                     searchOnSiteInput.setText("");
                     searchOnSiteLayout.setVisibility(GONE);
                     appBar.setVisibility(VISIBLE);
-                } else if (ninjaWebView.canGoBack()){
+                } else if (ninjaWebView != null && ninjaWebView.canGoBack()){
                     sp.edit().putBoolean("backPressed", true).apply();
                     ninjaWebView.goBack();
-                } else if (!ninjaWebView.isHomePage()) {
+                } else if (ninjaWebView != null && !ninjaWebView.isHomePage()) {
                     ninjaWebView.loadUrl(BrowserUnit.URL_HOME);
                 } else removeAlbum(currentAlbumController);
             }
@@ -486,13 +505,34 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
 
     @Override
     public void onDestroy() {
+        if (downloadReceiver != null) {
+            try {
+                unregisterReceiver(downloadReceiver);
+            } catch (Exception ignored) {}
+            downloadReceiver = null;
+        }
+        if (dialogOverview != null && dialogOverview.isShowing()) {
+            dialogOverview.dismiss();
+        }
+        if (dialogSearch != null && dialogSearch.isShowing()) {
+            dialogSearch.dismiss();
+        }
+        if (dialog_overflow != null && dialog_overflow.isShowing()) {
+            dialog_overflow.dismiss();
+        }
+        if (dialogCustomSearches != null && dialogCustomSearches.isShowing()) {
+            dialogCustomSearches.dismiss();
+        }
         DeleteUtils.checkAndExecuteAutoDelete(getApplicationContext());
         NotificationManager notificationManager = (NotificationManager) getApplicationContext().getSystemService(Context.NOTIFICATION_SERVICE);
-        notificationManager.cancel(1);
+        if (notificationManager != null) {
+            notificationManager.cancel(1);
+        }
         BrowserContainer.clear();
         if (!sp.getBoolean("sp_reloadTabs", false) || sp.getInt("restart_changed", 1) == 1) {
             sp.edit().putString("openTabs", "").apply();
         }
+        currentRootView = null;
         super.onDestroy();
     }
 
@@ -543,8 +583,8 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
         if (BrowserContainer.size() <= 1) {
             if (!sp.getBoolean("sp_reopenLastTab", false)) {
                 doubleTapsQuit();
-            } else {
-                ninjaWebView.loadUrl(Objects.requireNonNull(sp.getString("favoriteURL", BrowserUnit.URL_HOME)));
+            } else if (ninjaWebView != null) {
+                ninjaWebView.loadUrl(sp.getString("favoriteURL", BrowserUnit.URL_HOME));
             }
         } else {
             closeTabConfirmation(() -> {
@@ -666,7 +706,7 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
                         FrameLayout.LayoutParams.MATCH_PARENT
                 ));
         customView.setKeepScreenOn(true);
-        ((View) currentAlbumController).setVisibility(GONE);
+        if (currentAlbumController != null) ((View) currentAlbumController).setVisibility(GONE);
         setCustomFullscreen(true);
 
         if (view instanceof FrameLayout) {
@@ -681,9 +721,9 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
     @Override
     public void onHideCustomView() {
         FrameLayout decorView = (FrameLayout) getWindow().getDecorView();
-        decorView.removeView(fullscreenHolder);
-        customView.setKeepScreenOn(false);
-        ((View) currentAlbumController).setVisibility(VISIBLE);
+        if (fullscreenHolder != null) decorView.removeView(fullscreenHolder);
+        if (customView != null) customView.setKeepScreenOn(false);
+        if (currentAlbumController != null) ((View) currentAlbumController).setVisibility(VISIBLE);
         setCustomFullscreen(false);
         fullscreenHolder = null;
         customView = null;
@@ -928,15 +968,15 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
         }
 
         fab_menu = findViewById(R.id.fab_menu);
-        fab_menu.setOnClickListener(view -> showOverflow(null, null, 0, ninjaWebView.getTitle(), ninjaWebView.getUrl(), null, null, 0));
+        fab_menu.setOnClickListener(view -> showOverflow(null, null, 0, getCurrentTitle(), getCurrentUrl(), null, null, 0));
         fab_menu.setOnLongClickListener(view -> {
-            performGesture("setting_gesture_tabButton", ninjaWebView.getUrl());
+            performGesture("setting_gesture_tabButton", getCurrentUrl());
             return true;
         });
         fab_overview = findViewById(R.id.fab_overview);
         fab_overview.setOnClickListener(v -> showOverview());
         fab_overview.setOnLongClickListener(v -> {
-            performGesture("setting_gesture_overViewButton", ninjaWebView.getUrl());
+            performGesture("setting_gesture_overViewButton", getCurrentUrl());
             return true;
         });
 
@@ -952,30 +992,30 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
 
         fab_overview.setOnTouchListener(new SwipeTouchListener(context) {
             public void onSwipeTop() {
-            performGesture("setting_gesture_tb_up", ninjaWebView.getUrl());
+            performGesture("setting_gesture_tb_up", getCurrentUrl());
             hideOverview(); }
             public void onSwipeBottom() {
-                performGesture("setting_gesture_tb_down", ninjaWebView.getUrl());
+                performGesture("setting_gesture_tb_down", getCurrentUrl());
                 hideOverview(); }
             public void onSwipeRight() {
-                performGesture("setting_gesture_tb_right", ninjaWebView.getUrl());
+                performGesture("setting_gesture_tb_right", getCurrentUrl());
                 hideOverview(); }
             public void onSwipeLeft() {
-                performGesture("setting_gesture_tb_left", ninjaWebView.getUrl());
+                performGesture("setting_gesture_tb_left", getCurrentUrl());
                 hideOverview(); }});
 
         fab_menu.setOnTouchListener(new SwipeTouchListener(context) {
             public void onSwipeTop() {
-                performGesture("setting_gesture_nav_up", ninjaWebView.getUrl());
+                performGesture("setting_gesture_nav_up", getCurrentUrl());
                 hideOverflow(); }
             public void onSwipeBottom() {
-                performGesture("setting_gesture_nav_down", ninjaWebView.getUrl());
+                performGesture("setting_gesture_nav_down", getCurrentUrl());
                 hideOverflow();}
             public void onSwipeRight() {
-                performGesture("setting_gesture_nav_right", ninjaWebView.getUrl());
+                performGesture("setting_gesture_nav_right", getCurrentUrl());
                 hideOverflow();}
             public void onSwipeLeft() {
-                performGesture("setting_gesture_nav_left", ninjaWebView.getUrl());
+                performGesture("setting_gesture_nav_left", getCurrentUrl());
                 hideOverflow(); }});
 
         TextInputLayout search_textField  = dialogViewSearch.findViewById(R.id.search_textField);
@@ -1041,15 +1081,30 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
 
     @SuppressLint({"UnsafeOptInUsageError"})
     public void updateOmniBox() {
+        if (currentAlbumController == null) {
+            return;
+        }
+        ninjaWebView = (NinjaWebView) currentAlbumController;
+        if (ninjaWebView == null) {
+            return;
+        }
+
+        String url = ninjaWebView.getUrl();
+        if (url != null) {
+            ninjaWebView.initPreferences(url);
+        }
+        saveOpenedTabs();
+
         if (overViewTab.equals(getString(R.string.album_title_bookmarks))) {
             try {
-                RecordAction action = new RecordAction(context);
-                action.open(true);
-                if (action.checkUrl(ninjaWebView.getUrl(), RecordUnit.TABLE_BOOKMARK)) fab_overview.setImageResource(R.drawable.icon_bookmark_added);
-                else fab_overview.setImageResource(R.drawable.icon_bookmark);
-                action.close();
-            }
-            catch (Exception e) {Log.i(TAG, "dialogCustomSearches:" + e);}
+                if (url != null) {
+                    RecordAction action = new RecordAction(context);
+                    action.open(true);
+                    if (action.checkUrl(url, RecordUnit.TABLE_BOOKMARK)) fab_overview.setImageResource(R.drawable.icon_bookmark_added);
+                    else fab_overview.setImageResource(R.drawable.icon_bookmark);
+                    action.close();
+                }
+            } catch (Exception e) {Log.i(TAG, "dialogCustomSearches:" + e);}
         }
 
         searchOnSiteLayout.setVisibility(GONE);
@@ -1060,19 +1115,6 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
         badgeDrawable.setNumber(BrowserContainer.size());
         BadgeUtils.attachBadgeDrawable(badgeDrawable, fab_overview);
         bottom_navigation.getOrCreateBadge(R.id.page_0).setNumber(BrowserContainer.size());
-
-        if (currentAlbumController == null) {
-            return;
-        }
-        ninjaWebView = (NinjaWebView) currentAlbumController;
-        if (ninjaWebView == null) {
-            return;
-        }
-        String url = ninjaWebView.getUrl();
-        if (url != null) {
-            ninjaWebView.initPreferences(url);
-        }
-        saveOpenedTabs();
 
         if (url != null && ninjaWebView.isForeground()) {
             progressBar.setVisibility(GONE);
@@ -1112,8 +1154,12 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
                 appBar.setVisibility(VISIBLE);
             }
         });
-        searchOnSite_textField.setStartIconOnClickListener(v -> ((NinjaWebView) currentAlbumController).findNext(false));
-        searchOnSite_textField.setEndIconOnClickListener(v -> ((NinjaWebView) currentAlbumController).findNext(true));
+        searchOnSite_textField.setStartIconOnClickListener(v -> {
+            if (currentAlbumController != null) ((NinjaWebView) currentAlbumController).findNext(false);
+        });
+        searchOnSite_textField.setEndIconOnClickListener(v -> {
+            if (currentAlbumController != null) ((NinjaWebView) currentAlbumController).findNext(true);
+        });
         searchOnSiteInput.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
@@ -1130,11 +1176,14 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
         list_search.setAdapter(adapterSearch);
         list_search.setTextFilterEnabled(true);
         adapterSearch.notifyDataSetChanged();
-        list_search.setSelection(adapter.getCount() - 1);
+        if (adapterSearch.getCount() > 0) {
+            list_search.setSelection(adapterSearch.getCount() - 1);
+        }
         list_search.setOnItemClickListener((parent, view, position, id) -> {
             hideSearch();
             String url = ((TextView) view.findViewById(R.id.dateView)).getText().toString();
-            ninjaWebView.loadUrl(url);
+            if (ninjaWebView != null) ninjaWebView.loadUrl(url);
+            else addAlbum(null, url, true);
         });
         list_search.setOnItemLongClickListener((adapterView, view, i, l) -> {
             String title = ((TextView) view.findViewById(R.id.titleView)).getText().toString();
@@ -2208,9 +2257,18 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
     private void saveOpenedTabs() {
         ArrayList<String> openTabs = new ArrayList<>();
         for (int i = 0; i < BrowserContainer.size(); i++) {
-            if (currentAlbumController == BrowserContainer.get(i))
-                openTabs.add(0, ((NinjaWebView) (BrowserContainer.get(i))).getUrl());
-            else openTabs.add(((NinjaWebView) (BrowserContainer.get(i))).getUrl()); }
+            AlbumController controller = BrowserContainer.get(i);
+            if (controller instanceof NinjaWebView webView) {
+                String tabUrl = webView.getUrl();
+                if (tabUrl != null && !tabUrl.trim().isEmpty() && !"null".equalsIgnoreCase(tabUrl)) {
+                    if (currentAlbumController == controller) {
+                        openTabs.add(0, tabUrl);
+                    } else {
+                        openTabs.add(tabUrl);
+                    }
+                }
+            }
+        }
         sp.edit().putString("openTabs", TextUtils.join("‚‗‚", openTabs)).apply();
     }
     private void setCustomFullscreen(boolean fullscreen) {
@@ -2452,8 +2510,8 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
                 break;
             case "03":
                 if (fullscreenHolder != null || customView != null || videoView != null) {
-                    Log.v(TAG, "FOSS Browser in fullscreen mode");
-                } else if (ninjaWebView.canGoBack()){
+                    onHideCustomView();
+                } else if (ninjaWebView != null && ninjaWebView.canGoBack()){
                     sp.edit().putBoolean("backPressed", true).apply();
                     ninjaWebView.goBack();
                 } else removeAlbum(currentAlbumController);
@@ -2485,7 +2543,9 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
                 showOverview();
                 break;
             case "12":
-                shareLink(ninjaWebView.getTitle(), Objects.requireNonNull(ninjaWebView.getUrl()));
+                if (ninjaWebView != null && ninjaWebView.getUrl() != null) {
+                    shareLink(ninjaWebView.getTitle(), ninjaWebView.getUrl());
+                }
                 break;
             case "13":
                 searchOnSite();
@@ -2718,14 +2778,17 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
             sp.edit().putBoolean("show_overview", false).apply();
             getIntent().setAction("");
             CharSequence text = getIntent().getCharSequenceExtra(Intent.EXTRA_PROCESS_TEXT);
-            assert text != null;
-            url = text.toString();
-            addAlbum(null, url, true);
+            if (text != null) {
+                url = text.toString();
+                addAlbum(null, url, true);
+            }
         } else if (intent.getAction() != null && intent.getAction().equals(Intent.ACTION_WEB_SEARCH)) {
             sp.edit().putBoolean("show_overview", false).apply();
             getIntent().setAction("");
-            url = Objects.requireNonNull(intent.getStringExtra(SearchManager.QUERY));
-            addAlbum(null, url, true);
+            url = intent.getStringExtra(SearchManager.QUERY);
+            if (url != null) {
+                addAlbum(null, url, true);
+            }
         } else if (url != null && Intent.ACTION_SEND.equals(action)) {
             sp.edit().putBoolean("show_overview", false).apply();
             getIntent().setAction("");
@@ -2940,9 +3003,5 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
             System.exit(0);
         }));
         snackbar.show();
-    }
-
-    public static View getView() {
-        return ninjaWebView.getRootView();
     }
 }
