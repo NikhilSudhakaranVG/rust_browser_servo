@@ -12,30 +12,28 @@ FOSS Browser is a privacy-focused, open-source Android web browser optimized for
 
 ### Privacy
 
-FOSS Browser can save settings for each domain to protect your privacy. For each domain you can enable or disable: AdBlock, JavaScript, cookies, fingerprint protection and much more. For non saved domains you can edit a standard profile to your needs.
+FOSS Browser uses profiles to protect your privacy. For each domain or standard profile, you can enable or disable: AdBlock, JavaScript, cookies, fingerprint protection, and much more. Saved domain settings always overwrite the standard profile, allowing trusted domains (e.g. `example.com` ⇒ custom settings) to open with specific permissions while remaining protected on unknown sites.
 
 _More privacy features:_
 
-- Built-in AdBlock, which updates automatically. You can decide which content to block. AdBlock hosts are taken from [Steven Black - AdBlock hosts](https://github.com/StevenBlack/hosts).
-- Third-party cookies can be disabled.
-- block cookie banners
-- Enable or disable Android-autofill.
-- Delete browser data (on app exit).
-- Choose between different search engines (or set a custom one).
-- FOSS Browser itself doesn't collect any data: [Privacy policy](PRIVACY.md)
-
+- **Built-in AdBlock**: Automatically updated filter list blocking unwanted network requests (AdBlock hosts from [Steven Black](https://github.com/StevenBlack/hosts)).
+- **Third-party cookies**: Block third-party trackers with independent cookie policy control.
+- **Cookie banner blocker**: Automatically block intrusive consent banners.
+- **Fingerprint protection**: Defend against browser and hardware fingerprinting (including WebRTC IP leaks).
+- **Auto-wipe on exit**: Automatically clear cache, cookies, and history upon closing the app.
+- **Android Autofill**: Enable or disable system autofill integration.
+- **Custom search engines**: Choose between privacy-respecting search providers or configure custom search URLs.
+- **Zero data collection**: FOSS Browser does not collect or transmit any telemetry ([Privacy policy](PRIVACY.md)).
 
 ----
-### UI/Handling
+### UI & Handling
 
-FOSS Browser uses the latest Material You design libraries. Following system day/night mode and a wallpaper based theme are just two features of this new library. The UI is optimized for one-hand-use. All UI-elements are at the bottom of the screen.
+FOSS Browser is built with Material You design libraries. Following system day/night mode and a wallpaper-based dynamic theme are just two features of this interface. The UI is purposefully optimized for one-handed use:
 
-
-_More features:_
-
-- Keep screen on.
-- Open links in background.
-- Restore tabs on restart.
+- **Bottom-aligned controls**: All tabs, toolbar controls, menus, and the omnibox reside within comfortable thumb reach at the bottom of the screen.
+- **Background links**: Open links in background tabs without interrupting your reading flow.
+- **Session restore**: Automatically restore open tabs upon restarting the browser.
+- **Keep screen on**: Prevent screen timeout during long reading sessions.
 
 ----
 ### Bookmarks filter
