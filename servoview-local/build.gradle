@@ -1,0 +1,8 @@
+// This module exposes the Servo engine AAR as a project dependency.
+// -----------------------------------------------------------------------
+// SETUP REQUIRED: Download servo-aarch64-android.aar from:
+//   https://github.com/servo/servo/releases
+// and place it in THIS directory (servoview-local/).
+// -----------------------------------------------------------------------
+configurations.maybeCreate("default")
+artifacts.add("default", file('servo-aarch64-android.aar'))

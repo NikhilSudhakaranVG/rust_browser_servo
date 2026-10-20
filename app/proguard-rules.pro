@@ -6,3 +6,11 @@
 
 # Hält den Core von AndroidX-Bibliotheken stabil
 -dontwarn androidx.**
+
+# ── Servo Engine JNI ───────────────────────────────────────────────────
+# Prevents ProGuard from stripping Servo's JNI bridge classes
+-keep class org.servo.** { *; }
+-keep class org.mozilla.** { *; }
+-keepclasseswithmembernames class * {
+    native <methods>;
+}

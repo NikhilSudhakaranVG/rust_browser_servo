@@ -17,6 +17,12 @@ android {
 
         versionCode 159
         versionName "24"
+
+        // Servo engine only ships aarch64 (ARM64) for release.
+        // Remove the filter below if you build an x86 variant for emulators.
+        ndk {
+            abiFilters "arm64-v8a"
+        }
     }
 
     buildTypes {
@@ -31,11 +37,22 @@ android {
         checkReleaseBuilds false
         disable 'MissingTranslation'
     }
+
+    // Required: Servo renders via OpenGL ES
+    defaultConfig.resConfigs "en" // optional: reduce APK size
 }
 
 dependencies {
+    // ── Existing dependencies (keep during migration) ──────────────────
     implementation 'com.google.android.material:material:1.14.0'
     implementation 'androidx.preference:preference:1.2.1'
-    implementation 'androidx.webkit:webkit:1.17.0'
+    implementation 'androidx.webkit:webkit:1.17.0'         // WebViewEngine fallback
     implementation 'androidx.documentfile:documentfile:1.1.0'
+    implementation 'androidx.core:core:1.13.1'
+
+    // ── Servo engine ────────────────────────────────────────────────────
+    // Requires: place servo-aarch64-android.aar in servoview-local/
+    // See servoview-local/README.md for download instructions.
+    // Uncomment the line below once the AAR is in place:
+    // implementation project(':servoview-local')
 }
