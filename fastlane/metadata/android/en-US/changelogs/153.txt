@@ -1,6 +1,6 @@
 v 19 Henry David Thoreau
 
-With this release, it is possible to save settings separate for each website. Look at the WIKI for more Infos: https://codeberg.org/Gaukler_Faun/FOSS_Browser/wiki
+With this release, it is possible to save settings separate for each website.
 
 - new: save settings per website
 - new: Error-dialog, when downloading Blob-files

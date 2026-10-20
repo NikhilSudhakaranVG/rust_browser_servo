@@ -2,10 +2,21 @@
 
 
 -------------------------------------------------
+<b>Modulare Rendering-Engines (Servo & WebView)</b>
+-------------------------------------------------
+
+FOSS Browser trennt die Benutzeroberfläche von der Rendering-Engine durch eine modulare Abstraktionsschicht:
+
+• Android System WebView: Standardmäßige, praxiserprobte Engine auf Basis der WebKit/Blink-Plattform.
+• Servo Web Engine (Experimentell): Eine unabhängige, in Rust geschriebene Web-Engine mit parallelem Rendering über OpenGL ES.
+• Laufzeit-Umschaltung: Wechseln Sie die Render-Engine nach Bedarf über die Entwickleroptionen.
+
+
+-------------------------------------------------
 <b>Benutzeroberfläche</b>
 -------------------------------------------------
 
-FOSS Browser verwendet die neuesten Material You Design-Bibliotheken. Der Tag-/Nachtmodus des Systems und ein auf Hintergrundbildern basierendes Thema sind nur zwei Merkmale dieser neuen Bibliothek. Die Benutzeroberfläche ist für die Einhand-Bedienung optimiert. Alle UI-Elemente befinden sich am unteren Rand des Bildschirms.
+FOSS Browser verwendet die neuesten Material You Design-Bibliotheken. Der Tag-/Nachtmodus des Systems und ein auf Hintergrundbildern basierendes Thema sind nur zwei Merkmale dieser Bibliothek. Die Benutzeroberfläche ist für die Einhand-Bedienung optimiert: Alle Steuerelemente befinden sich am unteren Rand des Bildschirms.
 
 Weitere Funktionen:
 
@@ -13,33 +24,40 @@ Weitere Funktionen:
 - Links im Hintergrund öffnen.
 - Tabs beim Neustart wiederherstellen.
 
+
 -------------------------------------------------
 <b>Privatsphäre</b>
 -------------------------------------------------
 
-FOSS Browser verwendet Profile, um Ihre Privatsphäre zu schützen. Für jedes Profil können Sie den Schutz aktivieren oder deaktivieren: AdBlock, JavaScript, Cookies, Fingerabdruckschutz und vieles mehr. Profile können auch für Domänen gespeichert werden ("github.com" ⇒ Vertrauenswürdige Website). Diese gespeicherten Domains überschreiben immer das aktuelle Profil. So wird z.B. "github.com" immer mit dem vertrauenswürdigen Profil geöffnet, auch wenn Sie im geschützten Modus surfen. Weitere Datenschutzfunktionen:
+FOSS Browser verwendet Domain-Profile, um Ihre Privatsphäre zu schützen. Für jedes Profil können Sie Schutzfunktionen individuell festlegen: AdBlock, JavaScript, Cookies, Fingerabdruckschutz und vieles mehr. Gespeicherte Domain-Profile überschreiben das Standardprofil automatisch.
 
-- Eingebauter AdBlock, der automatisch aktualisiert wird. Sie können entscheiden, welche Inhalte blockiert werden sollen. AdBlock-Hosts werden von Steven Black - AbBlock-Hosts übernommen: https://github.com/StevenBlack/hosts.
-- Drittanbieter-Cookies können nicht deaktiviert werden.
+Weitere Datenschutzfunktionen:
+
+- Eingebauter AdBlock mit automatischer Aktualisierung (Hosts von Steven Black: https://github.com/StevenBlack/hosts).
+- Drittanbieter-Cookies können deaktiviert werden.
+- Blockieren von Cookie-Bannern.
 - Aktivieren oder deaktivieren Sie Android-Autofill.
-- Löschen der Browserdaten (beim Beenden der App).
+- Löschen der Browserdaten beim Beenden der App.
 - Wählen Sie zwischen verschiedenen Suchmaschinen (oder legen Sie eine benutzerdefinierte Suchmaschine fest).
-- FOSS Browser selbst sammelt keine Daten
+- FOSS Browser selbst sammelt keinerlei Daten.
+
 
 -------------------------------------------------
-<b>Lesezeicen-Filter</b>
+<b>Lesezeichen-Filter</b>
 -------------------------------------------------
 
 Organisieren Sie Ihre Lesezeichen mit Filtern. Sie können für jeden Filter einen eigenen Namen festlegen. Drücken Sie lange auf das Lesezeichensymbol in der Symbolleiste, um schnellen Zugriff auf Ihre bevorzugten Lesezeichen zu erhalten.
+
 
 -------------------------------------------------
 <b>Gesten</b>
 -------------------------------------------------
 
-Sie können der Symbolleiste und den Schaltflächen der Symbolleiste fast zwanzig verschiedene Gesten zuweisen. Jede in vier Richtungen. Sie können auch Ereignisse auslösen, indem Sie die Schaltflächen der Symbolleiste lange drücken. Sie können also bis zu zehn verschiedene Gesten zur Steuerung von FOSS Browser verwenden. Unterstützt werden z.B.: letzte Webseite laden, Tab wechseln, neu laden, Lesezeichen öffnen, ... und viele mehr.
+Sie können der Symbolleiste und den Schaltflächen der Symbolleiste fast zwanzig verschiedene Gesten in vier Richtungen zuweisen. Sie können auch Aktionen durch langes Drücken der Schaltflächen auslösen: letzte Webseite laden, Tab wechseln, neu laden, Lesezeichen öffnen und vieles mehr.
+
 
 -------------------------------------------------
 <b>Sicherungen</b>
 -------------------------------------------------
 
-Sichern Sie alle Ihre wichtigen Daten (Lesezeichen, Verlauf, vertrauenswürdige Websites usw.) auf Ihrer SD-Karte. Sie können auch die Einstellungen von FOSS Browser sichern. Backups können sogar bei einer Neuinstallation oder auf einem anderen Gerät wiederhergestellt werden (wenn Sie die Backup-Dateien auf das neue Gerät kopieren).
+Sichern Sie alle wichtigen Daten (Lesezeichen, Verlauf, Webseiten-Einstellungen) auf Ihrer SD-Karte bzw. im Gerätespeicher. Backups können bei einer Neuinstallation oder auf einem neuen Gerät problemlos wiederhergestellt werden.
