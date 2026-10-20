@@ -97,4 +97,11 @@
     <color name="red">#40f44336</color>
     <color name="teal">#40009688</color>
     <color name="yellow">#40ffc107</color>
+
+    <!-- Incognito Theme Colors -->
+    <color name="incognito_accent">#BA68C8</color>
+    <color name="incognito_tab_active">#3E3846</color>
+    <color name="incognito_tab_inactive">#25232A</color>
+    <color name="incognito_surface">#1D1B20</color>
+    <color name="incognito_on_surface">#E6E1E5</color>
 </resources>

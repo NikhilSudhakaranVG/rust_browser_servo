@@ -62,6 +62,7 @@
         <item>@string/menu_download</item>
         <item>@string/album_title_bookmarks</item>
         <item>@string/album_title_history</item>
+        <item>@string/main_menu_new_tab_incognito</item>
     </string-array>
 
     <string-array name="setting_values_gestures">
@@ -91,6 +92,7 @@
         <item>29</item>
         <item>30</item>
         <item>31</item>
+        <item>33</item>
     </string-array>
 
     <!-- Start tab -->

@@ -1,0 +1,27 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24"
+    android:tint="?attr/colorControlNormal">
+  <!-- Hat Crown -->
+  <path
+      android:fillColor="@android:color/white"
+      android:pathData="M12,4.5C9.5,4.5 7.5,5.8 6.7,7.5L17.3,7.5C16.5,5.8 14.5,4.5 12,4.5Z" />
+  <!-- Hat Brim -->
+  <path
+      android:fillColor="@android:color/white"
+      android:pathData="M19.5,9L4.5,9C3.7,9 3,9.7 3,10.5C3,11.3 3.7,12 4.5,12L19.5,12C20.3,12 21,11.3 21,10.5C21,9.7 20.3,9 19.5,9Z" />
+  <!-- Left Lens -->
+  <path
+      android:fillColor="@android:color/white"
+      android:pathData="M7,14C5.34,14 4,15.34 4,17C4,18.66 5.34,20 7,20C8.66,20 10,18.66 10,17C10,15.34 8.66,14 7,14Z" />
+  <!-- Right Lens -->
+  <path
+      android:fillColor="@android:color/white"
+      android:pathData="M17,14C15.34,14 14,15.34 14,17C14,18.66 15.34,20 17,20C18.66,20 20,18.66 20,17C20,15.34 18.66,14 17,14Z" />
+  <!-- Bridge between lenses -->
+  <path
+      android:fillColor="@android:color/white"
+      android:pathData="M10,16.5L14,16.5C14,15.8 13.5,15.2 12,15.2C10.5,15.2 10,15.8 10,16.5Z" />
+</vector>

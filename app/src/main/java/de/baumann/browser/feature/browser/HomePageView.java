@@ -32,6 +32,7 @@ public class HomePageView extends FrameLayout {
     public interface HomePageCallback {
         void onUrlRequested(String url);
         void onNewTabRequested(String url);
+        void onIncognitoTabRequested(String url);
         void onSearchRequested();
     }
 
@@ -39,6 +40,11 @@ public class HomePageView extends FrameLayout {
     private HomePageCallback callback;
     private AdapterHomeShortcuts adapter;
     private RecyclerView recyclerView;
+    private View normalHeader;
+    private View incognitoHeader;
+    private View shortcutsContainer;
+    private android.widget.TextView searchHint;
+    private boolean isIncognito = false;
 
     public HomePageView(@NonNull Context context) {
         super(context);
@@ -72,6 +78,11 @@ public class HomePageView extends FrameLayout {
             }
         });
 
+        normalHeader = root.findViewById(R.id.home_normal_header);
+        incognitoHeader = root.findViewById(R.id.home_incognito_header);
+        shortcutsContainer = root.findViewById(R.id.home_shortcuts_container);
+        searchHint = root.findViewById(R.id.home_search_hint);
+
         recyclerView = root.findViewById(R.id.home_shortcuts_recycler);
         int spanCount = getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE ? 6 : 4;
         recyclerView.setLayoutManager(new GridLayoutManager(context, spanCount));
@@ -99,7 +110,18 @@ public class HomePageView extends FrameLayout {
         refreshShortcuts();
     }
 
+    public void setIncognito(boolean incognito) {
+        this.isIncognito = incognito;
+        if (normalHeader != null) normalHeader.setVisibility(incognito ? GONE : VISIBLE);
+        if (incognitoHeader != null) incognitoHeader.setVisibility(incognito ? VISIBLE : GONE);
+        if (shortcutsContainer != null) shortcutsContainer.setVisibility(incognito ? GONE : VISIBLE);
+        if (searchHint != null) {
+            searchHint.setText(incognito ? R.string.search_incognito_hint : R.string.main_omnibox_input_hint);
+        }
+    }
+
     public void refreshShortcuts() {
+        if (isIncognito) return;
         RecordAction action = new RecordAction(context);
         List<Record> shortcuts = action.listStart();
         if (adapter != null) {
@@ -153,6 +175,7 @@ public class HomePageView extends FrameLayout {
     private void showShortcutOptions(Record record) {
         String[] options = new String[]{
                 context.getString(R.string.home_open_new_tab),
+                context.getString(R.string.home_open_incognito_tab),
                 context.getString(R.string.home_remove_shortcut)
         };
 
@@ -164,6 +187,10 @@ public class HomePageView extends FrameLayout {
                             callback.onNewTabRequested(record.getURL());
                         }
                     } else if (which == 1) {
+                        if (callback != null) {
+                            callback.onIncognitoTabRequested(record.getURL());
+                        }
+                    } else if (which == 2) {
                         RecordAction action = new RecordAction(context);
                         action.deleteStart(record.getURL());
                         refreshShortcuts();

@@ -317,14 +317,34 @@ public class HelperUnit {
 
         if (!list.isEmpty()) {
             boolean hasHome = false;
+            boolean hasIncognito = false;
             for (MenuItem item : list) {
                 if (context.getString(R.string.home).equals(item.getTitle())) {
                     hasHome = true;
-                    break;
+                }
+                if (context.getString(R.string.main_menu_new_tab_incognito).equals(item.getTitle())) {
+                    hasIncognito = true;
                 }
             }
             if (!hasHome) {
                 list.add(0, new MenuItem(context.getString(R.string.home), R.drawable.icon_home_nav, true));
+            }
+            if (!hasIncognito) {
+                int insertPos = Math.min(list.size(), 5);
+                list.add(insertPos, new MenuItem(context.getString(R.string.main_menu_new_tab_incognito), R.drawable.icon_incognito, true));
+                try {
+                    org.json.JSONArray jsonArray = new org.json.JSONArray();
+                    for (MenuItem item : list) {
+                        org.json.JSONObject jsonObject = new org.json.JSONObject();
+                        jsonObject.put("title", item.getTitle());
+                        jsonObject.put("iconResId", item.getIconResId());
+                        jsonObject.put("isSelected", item.isSelected());
+                        jsonArray.put(jsonObject);
+                    }
+                    sharedPreferences.edit().putString(Settings_Menu.KEY_LIST, jsonArray.toString()).apply();
+                } catch (org.json.JSONException e) {
+                    android.util.Log.e("SettingsMenu", "Fehler beim Aktualisieren der Liste", e);
+                }
             }
         } else {
             list.add(new MenuItem(context.getString(R.string.home), R.drawable.icon_home_nav, true));
@@ -332,6 +352,7 @@ public class HelperUnit {
             list.add(new MenuItem(context.getString(R.string.menu_fav), R.drawable.icon_fav_plus, true));
             list.add(new MenuItem(context.getString(R.string.main_menu_new_tabOpen), R.drawable.icon_tab_plus, true));
             list.add(new MenuItem(context.getString(R.string.main_menu_new_tab), R.drawable.icon_tab_background, true));
+            list.add(new MenuItem(context.getString(R.string.main_menu_new_tab_incognito), R.drawable.icon_incognito, true));
             list.add(new MenuItem(context.getString(R.string.menu_closeTab), R.drawable.icon_tab_remove, true));
             list.add(new MenuItem(context.getString(R.string.menu_other_searchSite), R.drawable.icon_search_site, true));
             list.add(new MenuItem(context.getString(R.string.menu_reload), R.drawable.icon_refresh, true));

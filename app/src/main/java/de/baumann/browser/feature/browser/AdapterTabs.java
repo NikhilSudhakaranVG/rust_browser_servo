@@ -10,6 +10,8 @@ import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import androidx.core.content.ContextCompat;
+
 import com.google.android.material.card.MaterialCardView;
 
 import de.baumann.browser.R;
@@ -21,15 +23,33 @@ public class AdapterTabs {
     private View albumView;
     private TextView albumTitle;
     private TextView albumUrl;
+    private ImageView albumIcon;
     private BrowserController browserController;
     private MaterialCardView albumCardView;
     private boolean foreground = false;
+    private boolean isIncognito = false;
 
     AdapterTabs(Context context, AlbumController albumController, BrowserController browserController) {
         this.context = context;
         this.albumController = albumController;
         this.browserController = browserController;
         initUI();
+    }
+
+    public void setIncognito(boolean incognito) {
+        this.isIncognito = incognito;
+        if (albumIcon != null) {
+            albumIcon.setImageResource(incognito ? R.drawable.icon_incognito : R.drawable.icon_web);
+        }
+        if (foreground) {
+            activate();
+        } else {
+            deactivate();
+        }
+    }
+
+    public boolean isIncognito() {
+        return isIncognito;
     }
 
     View getAlbumView() {
@@ -46,9 +66,16 @@ public class AdapterTabs {
     }
 
     void setAlbumTitle(String title, String url) {
-        albumTitle.setText(title);
+        if (isIncognito && (title == null || title.isEmpty() || title.equals(context.getString(R.string.home)))) {
+            albumTitle.setText(context.getString(R.string.incognito_tab));
+        } else {
+            albumTitle.setText(title);
+        }
         albumUrl.setText(url);
         HelperUnit.setHighLightedText(context, albumUrl, url, HelperUnit.domain(url));
+        if (albumIcon != null) {
+            albumIcon.setImageResource(isIncognito ? R.drawable.icon_incognito : R.drawable.icon_web);
+        }
     }
 
     void setBrowserController(BrowserController browserController) {
@@ -61,6 +88,10 @@ public class AdapterTabs {
         albumCardView = albumView.findViewById(R.id.item_CardViewItem);
         albumTitle = albumView.findViewById(R.id.titleView);
         albumUrl = albumView.findViewById(R.id.dateView);
+        albumIcon = albumView.findViewById(R.id.item_icon);
+        if (albumIcon != null) {
+            albumIcon.setImageResource(isIncognito ? R.drawable.icon_incognito : R.drawable.icon_web);
+        }
         ImageView albumClose = albumView.findViewById(R.id.iconView);
         albumClose.setImageResource(R.drawable.icon_tab_remove);
         albumClose.setVisibility(View.VISIBLE);
@@ -81,8 +112,7 @@ public class AdapterTabs {
         foreground = true;
         TypedValue typedValue = new TypedValue();
         context.getTheme().resolveAttribute(com.google.android.material.R.attr.colorPrimaryInverse, typedValue, true);
-        int color = typedValue.data;
-        context.getTheme().resolveAttribute(com.google.android.material.R.attr.colorSurface, typedValue, true);
+        int color = isIncognito ? ContextCompat.getColor(context, R.color.incognito_tab_active) : typedValue.data;
         albumCardView.setCardBackgroundColor(color);
         albumTitle.setTypeface(null, Typeface.BOLD);
         albumView.setOnClickListener(view -> {
@@ -95,7 +125,7 @@ public class AdapterTabs {
         foreground = false;
         TypedValue typedValue = new TypedValue();
         context.getTheme().resolveAttribute(com.google.android.material.R.attr.colorSurfaceContainerHighest, typedValue, true);
-        int color = typedValue.data;
+        int color = isIncognito ? ContextCompat.getColor(context, R.color.incognito_tab_inactive) : typedValue.data;
         albumCardView.setCardBackgroundColor(color);
         albumTitle.setTypeface(null, Typeface.NORMAL);
         albumView.setOnClickListener(view -> {

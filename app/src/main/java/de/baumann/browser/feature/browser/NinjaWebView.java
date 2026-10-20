@@ -89,6 +89,7 @@ public class NinjaWebView extends FrameLayout implements AlbumController {
     public boolean adBlock;
     public boolean saveData;
     public boolean camera;
+    private boolean isIncognito = false;
 
     private final Context context;
     private boolean stopped;
@@ -191,19 +192,21 @@ public class NinjaWebView extends FrameLayout implements AlbumController {
                     browserController.updateProgress(BrowserUnit.LOADING_STOPPED);
                 album.setAlbumTitle(title, url);
                 // Save history
-                if (history && url != null && !url.equals("about:blank") && !url.equals(BrowserUnit.URL_HOME) && !url.equals("foss://home")) {
+                if (history && !isIncognito && url != null && !url.equals("about:blank") && !url.equals(BrowserUnit.URL_HOME) && !url.equals("foss://home")) {
                     RecordAction action = new RecordAction(context);
                     action.open(true);
                     action.addHistory(new Record(title, url, 0, 0));
                     action.close();
                 }
                 // Save favicon
-                Bitmap favicon = engine.getFavicon();
-                if (favicon != null && url != null) {
-                    FaviconHelper faviconHelper = new FaviconHelper(context);
-                    faviconHelper.addFavicon(context, url, favicon);
+                if (!isIncognito) {
+                    Bitmap favicon = engine.getFavicon();
+                    if (favicon != null && url != null) {
+                        FaviconHelper faviconHelper = new FaviconHelper(context);
+                        faviconHelper.addFavicon(context, url, favicon);
+                    }
+                    updateFavicon(url);
                 }
-                updateFavicon(url);
             }
 
             @Override
@@ -392,6 +395,13 @@ public class NinjaWebView extends FrameLayout implements AlbumController {
                 }
 
                 @Override
+                public void onIncognitoTabRequested(String targetUrl) {
+                    if (browserController != null) {
+                        browserController.openIncognitoTab(targetUrl);
+                    }
+                }
+
+                @Override
                 public void onSearchRequested() {
                     if (browserController != null) {
                         browserController.showSearchDialog();
@@ -408,12 +418,15 @@ public class NinjaWebView extends FrameLayout implements AlbumController {
                     ViewGroup.LayoutParams.MATCH_PARENT);
             addView(homePageView, lp);
         }
+        homePageView.setIncognito(isIncognito);
         homePageView.setVisibility(View.VISIBLE);
-        homePageView.refreshShortcuts();
+        if (!isIncognito) {
+            homePageView.refreshShortcuts();
+        }
         engine.getView().setVisibility(View.GONE);
 
         if (album != null) {
-            album.setAlbumTitle(context.getString(R.string.home), BrowserUnit.URL_HOME);
+            album.setAlbumTitle(context.getString(isIncognito ? R.string.incognito_tab : R.string.home), BrowserUnit.URL_HOME);
         }
         post(() -> {
             if (browserController != null) {
@@ -535,6 +548,42 @@ public class NinjaWebView extends FrameLayout implements AlbumController {
         camera                = sp.getBoolean(profile + "_camera", true);
 
         engine.applyPreferences(sp, profile, url);
+
+        if (isIncognito) {
+            history = false;
+            WebView wv = getWebView();
+            if (wv != null) {
+                WebSettings ws = wv.getSettings();
+                ws.setSaveFormData(false);
+                ws.setCacheMode(WebSettings.LOAD_NO_CACHE);
+                ws.setGeolocationEnabled(false);
+            }
+        }
+    }
+
+    @Override
+    public boolean isIncognito() {
+        return isIncognito;
+    }
+
+    public void setIncognito(boolean incognito) {
+        this.isIncognito = incognito;
+        if (album != null) {
+            album.setIncognito(incognito);
+        }
+        if (homePageView != null) {
+            homePageView.setIncognito(incognito);
+        }
+        if (incognito) {
+            history = false;
+            WebView wv = getWebView();
+            if (wv != null) {
+                WebSettings ws = wv.getSettings();
+                ws.setSaveFormData(false);
+                ws.setCacheMode(WebSettings.LOAD_NO_CACHE);
+                ws.setGeolocationEnabled(false);
+            }
+        }
     }
 
     // ── Tab state ─────────────────────────────────────────────────────────
@@ -584,6 +633,9 @@ public class NinjaWebView extends FrameLayout implements AlbumController {
     }
 
     public synchronized void updateFavicon(String url) {
+        if (isIncognito) {
+            return;
+        }
         FaviconHelper.setFavicon(context, album.getAlbumView(), url,
                 R.id.item_icon, R.drawable.icon_image_broken);
     }
@@ -592,6 +644,16 @@ public class NinjaWebView extends FrameLayout implements AlbumController {
 
     public synchronized void destroy() {
         stopLoading();
+        if (isIncognito) {
+            WebView wv = getWebView();
+            if (wv != null) {
+                try {
+                    wv.clearCache(true);
+                    wv.clearFormData();
+                    wv.clearSslPreferences();
+                } catch (Exception ignored) {}
+            }
+        }
         engine.onPause();
         engine.destroy();
         removeAllViews();

@@ -56,6 +56,7 @@ public class Settings_Menu extends AppCompatActivity {
                 if (aktuellerTitel.equals(getString(R.string.menu_openFav))) {item.setIconResId(R.drawable.icon_fav);}
                 else if (aktuellerTitel.equals(getString(R.string.main_menu_new_tabOpen))) {item.setIconResId(R.drawable.icon_tab_plus);}
                 else if (aktuellerTitel.equals(getString(R.string.main_menu_new_tab))) {item.setIconResId(R.drawable.icon_tab_background);}
+                else if (aktuellerTitel.equals(getString(R.string.main_menu_new_tab_incognito))) {item.setIconResId(R.drawable.icon_incognito);}
                 else if (aktuellerTitel.equals(getString(R.string.menu_other_searchSite))) {item.setIconResId(R.drawable.icon_search_site);}
                 else if (aktuellerTitel.equals(getString(R.string.menu_closeTab))) {item.setIconResId(R.drawable.icon_tab_remove);}
                 else if (aktuellerTitel.equals(getString(R.string.menu_reload))) {item.setIconResId(R.drawable.icon_refresh);}

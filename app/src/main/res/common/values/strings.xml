@@ -37,6 +37,7 @@
     <string name="color_grey">Grey</string>
     <string name="main_menu_new_tab">New tab (background)</string>
     <string name="main_menu_new_tabOpen">New tab (foreground)</string>
+    <string name="main_menu_new_tab_incognito">New incognito tab</string>
     <string name="main_omnibox_input_hint">Search or type URL</string>
     <string name="menu_quit">Quit</string>
     <string name="menu_openFav">Open Favorite</string>
@@ -174,4 +175,19 @@
     <string name="home_added">Added to Home</string>
     <string name="home_removed">Shortcut removed</string>
     <string name="home_subtitle">Fast, private &amp; open source</string>
+
+    <!-- Incognito -->
+    <string name="incognito_tab">Incognito</string>
+    <string name="incognito_title">Private Browsing</string>
+    <string name="home_open_incognito_tab">Open in incognito tab</string>
+    <string name="incognito_home_title">You’ve gone incognito</string>
+    <string name="incognito_home_desc">Pages you view in incognito tabs won’t be saved in your browser history, cookie store, or search history after you’ve closed all of your incognito tabs.</string>
+    <string name="incognito_bullet_history">Browsing history won\'t be saved</string>
+    <string name="incognito_bullet_cookies">Cookies and site data won\'t be stored</string>
+    <string name="incognito_bullet_forms">Form data and passwords won\'t be saved</string>
+    <string name="search_incognito_hint">Search privately or type URL</string>
+    <string name="toast_incognito_opened">Opened in incognito tab</string>
+    <string name="incognito_close_all">Close all incognito tabs</string>
+    <string name="incognito_close_all_confirm">Close all open incognito tabs?</string>
+    <string name="incognito_closed_all">All incognito tabs closed</string>
 </resources>

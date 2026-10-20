@@ -6,4 +6,7 @@ public interface AlbumController {
     View getAlbumView();
     void activate();
     void deactivate();
+    default boolean isIncognito() {
+        return false;
+    }
 }

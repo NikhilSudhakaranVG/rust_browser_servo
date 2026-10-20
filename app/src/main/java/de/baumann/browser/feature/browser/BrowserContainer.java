@@ -28,4 +28,21 @@ public class BrowserContainer {
         }
         list.clear();
     }
+    public static boolean hasIncognito() {
+        for (AlbumController controller : list) {
+            if (controller.isIncognito()) {
+                return true;
+            }
+        }
+        return false;
+    }
+    public static int countIncognito() {
+        int count = 0;
+        for (AlbumController controller : list) {
+            if (controller.isIncognito()) {
+                count++;
+            }
+        }
+        return count;
+    }
 }

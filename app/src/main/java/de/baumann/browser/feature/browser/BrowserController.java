@@ -31,4 +31,5 @@ public interface BrowserController {
     void showOverflow(Dialog dialog, View view, int hideMenu, String title, String url, final AdapterRecord adapterRecord, List<Record> recordList, int location);
     void showSearchDialog();
     void openNewTab(String url);
+    void openIncognitoTab(String url);
 }
