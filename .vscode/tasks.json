@@ -1,0 +1,40 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Install & Run on Device",
+            "type": "shell",
+            "command": ".\\gradlew installDebug && adb shell am start -n de.baumann.browser/de.baumann.browser.feature.browser.BrowserActivity",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Assemble Debug APK",
+            "type": "shell",
+            "command": ".\\gradlew assembleDebug",
+            "group": "build",
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Launch App on Device",
+            "type": "shell",
+            "command": "adb shell am start -n de.baumann.browser/de.baumann.browser.feature.browser.BrowserActivity",
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        }
+    ]
+}

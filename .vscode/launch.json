@@ -1,17 +1,49 @@
 {
-    // Use IntelliSense to learn about possible attributes.
-    // Hover to view descriptions of existing attributes.
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
-        
-
         {
             "type": "kotlin",
             "request": "launch",
-            "name": "Kotlin Launch",
+            "name": "Launch",
             "projectRoot": "${workspaceFolder}",
-            "mainClass": "path.to.your.MainClassKt"
+            "mainClass": "de.baumann.browser.main.MainActivityKt"
+        },
+        {
+            "type": "kotlin",
+            "request": "launch",
+            "name": "Attach",
+            "projectRoot": "${workspaceFolder}",
+            "deviceId": "emulator-5554"
+        },
+        {
+            "type": "gradle",
+            "request": "launch",
+            "name": "Run app",
+            "task": "installDebug"
+        },
+        {
+            "type": "java",
+            "name": "Debug (Launch) - MainActivityKt",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "console": "internalConsole",
+            "stopOnEntry": false,
+            "mainClass": "de.baumann.browser.main.MainActivityKt",
+            "projectName": "app"
+        },
+        {
+            "name": "Attach to Chrome",
+            "port": 9222,
+            "request": "attach",
+            "type": "chrome",
+            "webRoot": "${workspaceFolder}"
+        },
+        {
+            "type": "android",
+            "request": "attach",
+            "name": "Connect to running instance",
+            "deviceId": "emulator-5554"
         }
     ]
 }
