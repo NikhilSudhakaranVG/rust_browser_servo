@@ -475,10 +475,6 @@ public class NinjaWebView extends FrameLayout implements AlbumController {
 
     // ── Engine access & WebView compatibility methods ────────────────────
 
-    public BrowserEngine getEngine() {
-        return engine;
-    }
-
     @Nullable
     public WebView getWebView() {
         if (engine instanceof WebViewEngine) {
