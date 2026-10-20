@@ -1,0 +1,17 @@
+<resources>
+    <!-- Das rote AppTheme hier komplett löschen! Nur das hier bleibt: -->
+    <style name="AppTheme_wallpaper" parent="Theme.Material3.DynamicColors.DayNight">
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+    </style>
+
+    <style name="AppTheme_wallpaper_day" parent="Theme.Material3.DynamicColors.Light">
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+    </style>
+
+    <style name="AppTheme_wallpaper_night" parent="Theme.Material3.DynamicColors.Dark">
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+    </style>
+</resources>
