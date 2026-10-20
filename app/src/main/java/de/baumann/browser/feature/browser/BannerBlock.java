@@ -1,4 +1,5 @@
-package de.baumann.browser.browser;
+package de.baumann.browser.feature.browser;
+import de.baumann.browser.feature.common.NinjaToast;
 
 import static android.content.ContentValues.TAG;
 
@@ -26,7 +27,6 @@ import java.nio.file.Paths;
 import java.util.Calendar;
 import java.util.Date;
 
-import de.baumann.browser.view.NinjaToast;
 
 @SuppressWarnings("ResultOfMethodCallIgnored")
 public class BannerBlock {

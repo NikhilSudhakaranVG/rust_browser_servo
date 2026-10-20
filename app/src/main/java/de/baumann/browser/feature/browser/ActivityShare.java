@@ -1,4 +1,4 @@
-package de.baumann.browser.activity;
+package de.baumann.browser.feature.browser;
 
 import android.app.Activity;
 import android.content.Intent;

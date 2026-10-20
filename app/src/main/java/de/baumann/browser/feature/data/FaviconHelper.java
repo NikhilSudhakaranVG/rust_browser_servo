@@ -1,4 +1,5 @@
-package de.baumann.browser.database;
+package de.baumann.browser.feature.data;
+import de.baumann.browser.feature.common.HelperUnit;
 
 import android.app.Activity;
 import android.content.ContentValues;
@@ -20,7 +21,6 @@ import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import de.baumann.browser.unit.HelperUnit;
 
 
 public class FaviconHelper extends SQLiteOpenHelper {

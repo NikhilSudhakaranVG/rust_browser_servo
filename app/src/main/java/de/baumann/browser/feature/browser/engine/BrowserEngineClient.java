@@ -1,12 +1,14 @@
-package de.baumann.browser.browser.engine;
+package de.baumann.browser.feature.browser.engine;
+import de.baumann.browser.feature.browser.BrowserActivity;
+import de.baumann.browser.feature.browser.NinjaWebView;
 
 import android.graphics.Bitmap;
 
 /**
  * Callback interface from a {@link BrowserEngine} back to its host.
  *
- * <p>The host (typically {@link de.baumann.browser.view.NinjaWebView} or
- * {@link de.baumann.browser.activity.BrowserActivity}) implements this
+ * <p>The host (typically {@link de.baumann.browser.feature.browser.NinjaWebView} or
+ * {@link de.baumann.browser.feature.browser.BrowserActivity}) implements this
  * interface to receive asynchronous page-lifecycle events from whichever
  * engine is active.</p>
  */

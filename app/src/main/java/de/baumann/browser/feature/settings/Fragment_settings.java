@@ -1,4 +1,6 @@
-package de.baumann.browser.fragment;
+package de.baumann.browser.feature.settings;
+import de.baumann.browser.feature.browser.AdBlock;
+import de.baumann.browser.feature.browser.NinjaWebView;
 
 import static android.content.ContentValues.TAG;
 import android.content.Context;
@@ -13,10 +15,6 @@ import androidx.preference.PreferenceGroup;
 import androidx.preference.PreferenceManager;
 import java.util.Objects;
 import de.baumann.browser.R;
-import de.baumann.browser.activity.*;
-import de.baumann.browser.browser.AdBlock;
-import de.baumann.browser.preferences.BasePreferenceFragment;
-import de.baumann.browser.view.NinjaWebView;
 
 public class Fragment_settings extends BasePreferenceFragment implements SharedPreferences.OnSharedPreferenceChangeListener {
 

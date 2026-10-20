@@ -17,7 +17,15 @@
     If not, see <http://www.gnu.org/licenses/>.
  */
 
-package de.baumann.browser.unit;
+package de.baumann.browser.feature.common;
+import de.baumann.browser.feature.browser.BrowserActivity;
+import de.baumann.browser.feature.browser.BrowserController;
+import de.baumann.browser.feature.browser.GridItem;
+import de.baumann.browser.feature.browser.List_standard;
+import de.baumann.browser.feature.browser.NinjaWebView;
+import de.baumann.browser.feature.data.FaviconHelper;
+import de.baumann.browser.feature.dialogs.MenuItem;
+import de.baumann.browser.feature.settings.Settings_Menu;
 
 import static android.content.ContentValues.TAG;
 
@@ -75,14 +83,6 @@ import java.util.Objects;
 import java.util.function.BooleanSupplier;
 
 import de.baumann.browser.R;
-import de.baumann.browser.activity.BrowserActivity;
-import de.baumann.browser.activity.Settings_Menu;
-import de.baumann.browser.browser.BrowserController;
-import de.baumann.browser.browser.List_standard;
-import de.baumann.browser.database.FaviconHelper;
-import de.baumann.browser.view.GridItem;
-import de.baumann.browser.view.MenuItem;
-import de.baumann.browser.view.NinjaWebView;
 
 public class HelperUnit {
     private static SharedPreferences sp;

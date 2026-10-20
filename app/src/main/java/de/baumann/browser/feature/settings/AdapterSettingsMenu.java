@@ -1,4 +1,5 @@
-package de.baumann.browser.view;
+package de.baumann.browser.feature.settings;
+import de.baumann.browser.feature.dialogs.MenuItem;
 
 import static android.view.View.GONE;
 

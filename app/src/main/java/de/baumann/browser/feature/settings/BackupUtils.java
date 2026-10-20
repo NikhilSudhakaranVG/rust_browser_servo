@@ -1,4 +1,7 @@
-package de.baumann.browser.unit;
+package de.baumann.browser.feature.settings;
+import de.baumann.browser.feature.data.Record;
+import de.baumann.browser.feature.data.RecordAction;
+import de.baumann.browser.feature.data.RecordUnit;
 
 import android.content.Context;
 import android.content.Intent;
@@ -23,8 +26,6 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
-import de.baumann.browser.database.Record;
-import de.baumann.browser.database.RecordAction;
 
 public class BackupUtils {
     private static final String TAG = "BackupUtils";

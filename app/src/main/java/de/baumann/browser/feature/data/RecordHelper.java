@@ -1,10 +1,9 @@
-package de.baumann.browser.database;
+package de.baumann.browser.feature.data;
 
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
-import de.baumann.browser.unit.RecordUnit;
 
 class RecordHelper extends SQLiteOpenHelper {
     private static final String DATABASE_NAME = "Ninja4.db";

@@ -1,4 +1,6 @@
-package de.baumann.browser.view;
+package de.baumann.browser.feature.settings;
+import de.baumann.browser.feature.common.HelperUnit;
+import de.baumann.browser.feature.common.NinjaToast;
 
 import static android.view.View.VISIBLE;
 
@@ -29,9 +31,6 @@ import java.util.ArrayList;
 import java.util.Objects;
 
 import de.baumann.browser.R;
-import de.baumann.browser.objects.CustomRedirect;
-import de.baumann.browser.objects.CustomRedirectsHelper;
-import de.baumann.browser.unit.HelperUnit;
 
 public class AdapterCustomRedirect extends RecyclerView.Adapter<RedirectsViewHolder> {
     final private ArrayList<CustomRedirect> redirects;

@@ -1,4 +1,7 @@
-package de.baumann.browser.activity;
+package de.baumann.browser.feature.settings;
+import de.baumann.browser.feature.common.BrowserUnit;
+import de.baumann.browser.feature.common.HelperUnit;
+import de.baumann.browser.feature.dialogs.MenuItem;
 
 import de.baumann.browser.R;
 
@@ -19,9 +22,6 @@ import com.google.android.material.snackbar.Snackbar;
 
 import java.util.Objects;
 
-import de.baumann.browser.unit.BrowserUnit;
-import de.baumann.browser.unit.DeleteUtils;
-import de.baumann.browser.unit.HelperUnit;
 
 public class Settings_Clear extends AppCompatActivity {
 

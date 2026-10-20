@@ -1,13 +1,13 @@
-package de.baumann.browser.browser;
+package de.baumann.browser.feature.browser;
+import de.baumann.browser.feature.common.HelperUnit;
+import de.baumann.browser.feature.data.RecordAction;
+import de.baumann.browser.feature.data.RecordUnit;
 
 import android.content.Context;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import de.baumann.browser.database.RecordAction;
-import de.baumann.browser.unit.HelperUnit;
-import de.baumann.browser.unit.RecordUnit;
 
 public class List_standard {
 

@@ -1,9 +1,8 @@
-package de.baumann.browser.fragment;
+package de.baumann.browser.feature.settings;
 
 import android.os.Bundle;
 
 import de.baumann.browser.R;
-import de.baumann.browser.preferences.BasePreferenceFragment;
 
 public class Fragment_settings_Filter extends BasePreferenceFragment {
     @Override

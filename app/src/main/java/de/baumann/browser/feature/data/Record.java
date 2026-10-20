@@ -1,6 +1,6 @@
-package de.baumann.browser.database;
+package de.baumann.browser.feature.data;
+import de.baumann.browser.feature.common.HelperUnit;
 
-import de.baumann.browser.unit.HelperUnit;
 
 public class Record {
 

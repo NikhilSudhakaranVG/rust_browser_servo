@@ -57,7 +57,7 @@
             android:value="true" />
 
         <activity
-            android:name="de.baumann.browser.activity.BrowserActivity"
+            android:name="de.baumann.browser.feature.browser.BrowserActivity"
             android:configChanges="orientation|uiMode|screenSize|smallestScreenSize|screenLayout|keyboard|keyboardHidden"
             android:windowSoftInputMode="adjustResize|stateHidden"
             android:fitsSystemWindows="true"
@@ -109,7 +109,7 @@
 
         <!-- Hilfs-Activities für das Teilen von Inhalten -->
         <activity
-            android:name=".activity.ActivityShare"
+            android:name="de.baumann.browser.feature.browser.ActivityShare"
             android:label="@string/dialog_postOnWebsite"
             android:theme="@android:style/Theme.NoDisplay"
             android:exported="true">
@@ -121,7 +121,7 @@
         </activity>
 
         <activity
-            android:name=".activity.ActivityCustomSearches"
+            android:name="de.baumann.browser.feature.browser.ActivityCustomSearches"
             android:label="@string/custom_searches_title"
             android:theme="@android:style/Theme.NoDisplay"
             android:exported="true">
@@ -137,14 +137,14 @@
           WICHTIG ab Android 12+: Müssen explizit android:exported="false" deklariert werden,
           da sie nur App-intern aufgerufen werden und sonst ein Sicherheitsrisiko darstellen!
         -->
-        <activity android:name="de.baumann.browser.activity.Settings_Activity" android:label="@string/setting_title_browser" android:exported="false" />
-        <activity android:name="de.baumann.browser.activity.Settings_ProfileList" android:label="@string/setting_title_savedWebSites" android:exported="false" />
-        <activity android:name="de.baumann.browser.activity.Settings_Backup" android:label="@string/setting_title_data" android:exported="false" />
-        <activity android:name="de.baumann.browser.activity.Settings_Gesture" android:label="@string/setting_gestures" android:exported="false" />
-        <activity android:name="de.baumann.browser.activity.Settings_Filter" android:label="@string/setting_filter" android:exported="false" />
-        <activity android:name="de.baumann.browser.activity.Settings_Profile" android:label="@string/setting_title_profiles_standard" android:exported="false" />
-        <activity android:name="de.baumann.browser.activity.Settings_Menu" android:label="@string/setting_menu" android:exported="false" />
-        <activity android:name="de.baumann.browser.activity.Settings_Clear" android:label="@string/menu_delete" android:exported="false" />
+        <activity android:name="de.baumann.browser.feature.settings.Settings_Activity" android:label="@string/setting_title_browser" android:exported="false" />
+        <activity android:name="de.baumann.browser.feature.settings.Settings_ProfileList" android:label="@string/setting_title_savedWebSites" android:exported="false" />
+        <activity android:name="de.baumann.browser.feature.settings.Settings_Backup" android:label="@string/setting_title_data" android:exported="false" />
+        <activity android:name="de.baumann.browser.feature.settings.Settings_Gesture" android:label="@string/setting_gestures" android:exported="false" />
+        <activity android:name="de.baumann.browser.feature.settings.Settings_Filter" android:label="@string/setting_filter" android:exported="false" />
+        <activity android:name="de.baumann.browser.feature.settings.Settings_Profile" android:label="@string/setting_title_profiles_standard" android:exported="false" />
+        <activity android:name="de.baumann.browser.feature.settings.Settings_Menu" android:label="@string/setting_menu" android:exported="false" />
+        <activity android:name="de.baumann.browser.feature.settings.Settings_Clear" android:label="@string/menu_delete" android:exported="false" />
 
     </application>
 

@@ -1,4 +1,9 @@
-package de.baumann.browser.dialogs;
+package de.baumann.browser.feature.dialogs;
+import de.baumann.browser.feature.common.HelperUnit;
+import de.baumann.browser.feature.common.NinjaToast;
+import de.baumann.browser.feature.settings.AdapterCustomRedirect;
+import de.baumann.browser.feature.settings.CustomRedirect;
+import de.baumann.browser.feature.settings.CustomRedirectsHelper;
 
 import android.app.Dialog;
 import android.content.SharedPreferences;
@@ -24,11 +29,6 @@ import java.util.ArrayList;
 import java.util.Objects;
 
 import de.baumann.browser.R;
-import de.baumann.browser.objects.CustomRedirect;
-import de.baumann.browser.objects.CustomRedirectsHelper;
-import de.baumann.browser.unit.HelperUnit;
-import de.baumann.browser.view.AdapterCustomRedirect;
-import de.baumann.browser.view.NinjaToast;
 
 public class CustomRedirectsDialog extends DialogFragment {
     AdapterCustomRedirect adapter;

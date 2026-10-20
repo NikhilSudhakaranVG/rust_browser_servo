@@ -1,4 +1,10 @@
-package de.baumann.browser.unit;
+package de.baumann.browser.feature.common;
+import de.baumann.browser.feature.browser.BrowserActivity;
+import de.baumann.browser.feature.browser.NinjaWebView;
+import de.baumann.browser.feature.data.RecordAction;
+import de.baumann.browser.feature.data.RecordUnit;
+import de.baumann.browser.feature.settings.CustomRedirect;
+import de.baumann.browser.feature.settings.CustomRedirectsHelper;
 
 import static android.content.ContentValues.TAG;
 
@@ -38,10 +44,6 @@ import java.util.Objects;
 import java.util.regex.Pattern;
 
 import de.baumann.browser.R;
-import de.baumann.browser.activity.BrowserActivity;
-import de.baumann.browser.database.RecordAction;
-import de.baumann.browser.objects.CustomRedirect;
-import de.baumann.browser.objects.CustomRedirectsHelper;
 
 public class BrowserUnit {
 
@@ -215,8 +217,8 @@ public class BrowserUnit {
         if ("never".equals(dialogSetting)) return;
         // Notification-Inhalt vorbereiten
         String url = "";
-        if (webView instanceof de.baumann.browser.view.NinjaWebView) {
-            url = ((de.baumann.browser.view.NinjaWebView) webView).getUrl();
+        if (webView instanceof de.baumann.browser.feature.browser.NinjaWebView) {
+            url = ((de.baumann.browser.feature.browser.NinjaWebView) webView).getUrl();
         } else if (webView instanceof WebView) {
             url = ((WebView) webView).getUrl();
         }

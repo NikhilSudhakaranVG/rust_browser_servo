@@ -18,7 +18,7 @@
             android:summary="@string/dialog_postOnWebsiteHint"
             android:title="@string/dialog_postOnWebsite" />
 
-        <de.baumann.browser.preferences.ListSwitchPreference
+        <de.baumann.browser.feature.settings.ListSwitchPreference
             android:defaultValue="3"
             android:entries="@array/setting_entries_tab"
             android:entryValues="@array/setting_values_tab"
@@ -99,14 +99,14 @@
             android:title="@string/setting_title_search_engine" />
 
         <!-- OPTIMIERT: widgetLayout für saubere Checkbox-Injektion gesetzt -->
-        <de.baumann.browser.preferences.EditTextSwitchPreference
+        <de.baumann.browser.feature.settings.EditTextSwitchPreference
             android:key="sp_search_engine_custom"
             android:title="@string/setting_title_searchEngine"
             android:widgetLayout="@layout/preference_checkbox_widget"
             app:editTextSwitchKey="searchEngineSwitch"
             app:useSimpleSummaryProvider="true" />
 
-        <de.baumann.browser.preferences.EditTextSwitchPreference
+        <de.baumann.browser.feature.settings.EditTextSwitchPreference
             android:key="sp_userAgent"
             android:title="@string/setting_title_userAgent"
             android:widgetLayout="@layout/preference_checkbox_widget"

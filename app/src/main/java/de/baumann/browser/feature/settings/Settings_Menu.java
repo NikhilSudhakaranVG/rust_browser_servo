@@ -1,4 +1,7 @@
-package de.baumann.browser.activity;
+package de.baumann.browser.feature.settings;
+import de.baumann.browser.feature.common.BrowserUnit;
+import de.baumann.browser.feature.common.HelperUnit;
+import de.baumann.browser.feature.dialogs.MenuItem;
 
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -19,10 +22,6 @@ import java.util.List;
 import java.util.Objects;
 
 import de.baumann.browser.R;
-import de.baumann.browser.unit.BrowserUnit;
-import de.baumann.browser.unit.HelperUnit;
-import de.baumann.browser.view.AdapterSettingsMenu;
-import de.baumann.browser.view.MenuItem;
 
 public class Settings_Menu extends AppCompatActivity {
 

@@ -1,4 +1,6 @@
-package de.baumann.browser.browser;
+package de.baumann.browser.feature.browser;
+import de.baumann.browser.feature.data.AdapterRecord;
+import de.baumann.browser.feature.data.Record;
 
 import android.app.Dialog;
 import android.content.Context;
@@ -11,8 +13,6 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import java.util.List;
 
-import de.baumann.browser.database.Record;
-import de.baumann.browser.view.AdapterRecord;
 
 public interface BrowserController {
     void updateProgress(int progress);

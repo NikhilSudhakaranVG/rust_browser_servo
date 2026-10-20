@@ -1,4 +1,5 @@
-package de.baumann.browser.view;
+package de.baumann.browser.feature.data;
+import de.baumann.browser.feature.common.HelperUnit;
 
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -20,9 +21,6 @@ import java.util.List;
 import java.util.Locale;
 
 import de.baumann.browser.R;
-import de.baumann.browser.database.FaviconHelper;
-import de.baumann.browser.database.Record;
-import de.baumann.browser.unit.HelperUnit;
 
 public class AdapterRecord extends ArrayAdapter<Record> {
     private final Context context;

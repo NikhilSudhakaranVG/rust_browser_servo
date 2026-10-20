@@ -1,4 +1,4 @@
-package de.baumann.browser.view;
+package de.baumann.browser.feature.dialogs;
 
 public class MenuItem {
     private final String title;

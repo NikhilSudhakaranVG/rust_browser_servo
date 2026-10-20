@@ -1,4 +1,9 @@
-package de.baumann.browser.view;
+package de.baumann.browser.feature.settings;
+import de.baumann.browser.feature.browser.BrowserActivity;
+import de.baumann.browser.feature.browser.NinjaWebView;
+import de.baumann.browser.feature.common.BrowserUnit;
+import de.baumann.browser.feature.common.HelperUnit;
+import de.baumann.browser.feature.common.NinjaToast;
 
 import static android.view.View.GONE;
 import static android.view.View.VISIBLE;
@@ -24,11 +29,6 @@ import org.json.JSONException;
 import java.util.ArrayList;
 
 import de.baumann.browser.R;
-import de.baumann.browser.activity.BrowserActivity;
-import de.baumann.browser.objects.CustomRedirect;
-import de.baumann.browser.objects.CustomSearchesHelper;
-import de.baumann.browser.unit.BrowserUnit;
-import de.baumann.browser.unit.HelperUnit;
 
 public class AdapterCustomSearches extends RecyclerView.Adapter<RedirectsViewHolder> {
     final private ArrayList<CustomRedirect> redirects;

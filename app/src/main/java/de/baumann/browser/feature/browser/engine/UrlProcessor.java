@@ -1,15 +1,16 @@
-package de.baumann.browser.browser.engine;
+package de.baumann.browser.feature.browser.engine;
+import de.baumann.browser.feature.browser.NinjaWebView;
+import de.baumann.browser.feature.common.BrowserUnit;
+import de.baumann.browser.feature.common.HelperUnit;
 
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 
-import de.baumann.browser.unit.BrowserUnit;
-import de.baumann.browser.unit.HelperUnit;
 
 /**
  * Shared URL pre-processing logic extracted from
- * {@link de.baumann.browser.view.NinjaWebView#loadUrl(String)}.
+ * {@link de.baumann.browser.feature.browser.NinjaWebView#loadUrl(String)}.
  *
  * <p>Both {@link WebViewEngine} and {@link ServoEngine} delegate to this
  * class so that business logic (tracking-param stripping, http→https upgrade,

@@ -1,4 +1,5 @@
-package de.baumann.browser.objects;
+package de.baumann.browser.feature.settings;
+import de.baumann.browser.feature.browser.BrowserActivity;
 
 import android.content.SharedPreferences;
 
@@ -12,7 +13,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Objects;
 
-import de.baumann.browser.activity.BrowserActivity;
 
 public class CustomSearchesHelper {
 

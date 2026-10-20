@@ -1,4 +1,4 @@
-package de.baumann.browser.preferences;
+package de.baumann.browser.feature.settings;
 import de.baumann.browser.R;
 
 import android.content.Context;

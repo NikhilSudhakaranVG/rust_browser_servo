@@ -1,4 +1,5 @@
-package de.baumann.browser.preferences;
+package de.baumann.browser.feature.settings;
+import de.baumann.browser.feature.common.HelperUnit;
 
 import android.app.Dialog;
 import android.os.Bundle;
@@ -13,7 +14,6 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.textfield.TextInputEditText;
 import java.util.Objects;
 import de.baumann.browser.R;
-import de.baumann.browser.unit.HelperUnit;
 
 public class BasePreferenceFragment extends PreferenceFragmentCompat {
 

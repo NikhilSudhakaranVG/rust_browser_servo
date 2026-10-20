@@ -1,4 +1,4 @@
-package de.baumann.browser.database;
+package de.baumann.browser.feature.data;
 
 import android.app.Activity;
 import android.content.ContentValues;
@@ -16,7 +16,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 
-import de.baumann.browser.unit.RecordUnit;
 
 public class RecordAction {
     public static final int HISTORY_ITEM = 0;

@@ -1,4 +1,4 @@
-package de.baumann.browser.unit;
+package de.baumann.browser.feature.data;
 
 public class RecordUnit {
 

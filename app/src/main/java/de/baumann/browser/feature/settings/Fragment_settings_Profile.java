@@ -1,12 +1,11 @@
-package de.baumann.browser.fragment;
+package de.baumann.browser.feature.settings;
+import de.baumann.browser.feature.browser.BannerBlock;
 
 import android.os.Bundle;
 import android.content.SharedPreferences;
 import androidx.preference.PreferenceManager;
 import java.util.Objects;
 import de.baumann.browser.R;
-import de.baumann.browser.browser.BannerBlock;
-import de.baumann.browser.preferences.BasePreferenceFragment;
 
 public class Fragment_settings_Profile extends BasePreferenceFragment implements SharedPreferences.OnSharedPreferenceChangeListener {
 

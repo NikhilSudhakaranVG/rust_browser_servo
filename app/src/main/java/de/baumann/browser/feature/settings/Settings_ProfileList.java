@@ -1,4 +1,11 @@
-package de.baumann.browser.activity;
+package de.baumann.browser.feature.settings;
+import de.baumann.browser.feature.browser.List_standard;
+import de.baumann.browser.feature.common.BrowserUnit;
+import de.baumann.browser.feature.common.HelperUnit;
+import de.baumann.browser.feature.common.NinjaToast;
+import de.baumann.browser.feature.data.RecordAction;
+import de.baumann.browser.feature.data.RecordUnit;
+import de.baumann.browser.feature.dialogs.MenuItem;
 
 import static android.content.ContentValues.TAG;
 
@@ -28,13 +35,6 @@ import java.util.List;
 import java.util.Objects;
 
 import de.baumann.browser.R;
-import de.baumann.browser.browser.List_standard;
-import de.baumann.browser.database.RecordAction;
-import de.baumann.browser.unit.BrowserUnit;
-import de.baumann.browser.unit.HelperUnit;
-import de.baumann.browser.unit.RecordUnit;
-import de.baumann.browser.view.NinjaToast;
-import de.baumann.browser.view.AdapterProfileList;
 
 public class Settings_ProfileList extends AppCompatActivity {
 

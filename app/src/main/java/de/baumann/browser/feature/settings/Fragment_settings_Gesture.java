@@ -1,4 +1,4 @@
-package de.baumann.browser.fragment;
+package de.baumann.browser.feature.settings;
 
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -9,7 +9,6 @@ import androidx.preference.PreferenceGroup;
 import androidx.preference.PreferenceManager;
 import java.util.Objects;
 import de.baumann.browser.R;
-import de.baumann.browser.preferences.BasePreferenceFragment;
 
 public class Fragment_settings_Gesture extends BasePreferenceFragment implements SharedPreferences.OnSharedPreferenceChangeListener {
 

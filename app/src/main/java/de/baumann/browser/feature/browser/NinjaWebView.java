@@ -1,4 +1,14 @@
-package de.baumann.browser.view;
+package de.baumann.browser.feature.browser;
+import de.baumann.browser.feature.browser.engine.BrowserEngine;
+import de.baumann.browser.feature.browser.engine.BrowserEngineClient;
+import de.baumann.browser.feature.browser.engine.ServoEngine;
+import de.baumann.browser.feature.browser.engine.UrlProcessor;
+import de.baumann.browser.feature.browser.engine.WebViewEngine;
+import de.baumann.browser.feature.common.BrowserUnit;
+import de.baumann.browser.feature.common.HelperUnit;
+import de.baumann.browser.feature.data.FaviconHelper;
+import de.baumann.browser.feature.data.Record;
+import de.baumann.browser.feature.data.RecordAction;
 
 import static android.content.ContentValues.TAG;
 
@@ -42,19 +52,6 @@ import java.util.List;
 import java.util.Objects;
 
 import de.baumann.browser.R;
-import de.baumann.browser.browser.AlbumController;
-import de.baumann.browser.browser.BrowserController;
-import de.baumann.browser.browser.List_standard;
-import de.baumann.browser.browser.engine.BrowserEngine;
-import de.baumann.browser.browser.engine.BrowserEngineClient;
-import de.baumann.browser.browser.engine.ServoEngine;
-import de.baumann.browser.browser.engine.UrlProcessor;
-import de.baumann.browser.browser.engine.WebViewEngine;
-import de.baumann.browser.database.FaviconHelper;
-import de.baumann.browser.database.Record;
-import de.baumann.browser.database.RecordAction;
-import de.baumann.browser.unit.BrowserUnit;
-import de.baumann.browser.unit.HelperUnit;
 
 /**
  * Primary browser content view — now a {@link FrameLayout} that hosts a

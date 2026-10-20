@@ -1,4 +1,4 @@
-package de.baumann.browser.view;
+package de.baumann.browser.feature.dialogs;
 
 import android.view.LayoutInflater;
 import android.view.View;

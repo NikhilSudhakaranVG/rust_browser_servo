@@ -1,4 +1,4 @@
-package de.baumann.browser.browser;
+package de.baumann.browser.feature.browser;
 
 import android.view.View;
 

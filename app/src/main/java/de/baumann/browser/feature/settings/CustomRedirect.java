@@ -1,4 +1,4 @@
-package de.baumann.browser.objects;
+package de.baumann.browser.feature.settings;
 
 public class CustomRedirect {
     public final String source;

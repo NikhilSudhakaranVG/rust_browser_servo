@@ -1,4 +1,7 @@
-package de.baumann.browser.activity;
+package de.baumann.browser.feature.settings;
+import de.baumann.browser.feature.common.BrowserUnit;
+import de.baumann.browser.feature.common.HelperUnit;
+import de.baumann.browser.feature.dialogs.MenuItem;
 
 
 import android.app.Activity;
@@ -26,9 +29,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import de.baumann.browser.R;
-import de.baumann.browser.unit.BackupUtils;
-import de.baumann.browser.unit.BrowserUnit;
-import de.baumann.browser.unit.HelperUnit;
 
 public class Settings_Backup extends AppCompatActivity {
 

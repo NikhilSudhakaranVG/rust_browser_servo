@@ -1,4 +1,5 @@
-package de.baumann.browser.browser.engine;
+package de.baumann.browser.feature.browser.engine;
+import de.baumann.browser.feature.browser.NinjaWebView;
 
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
@@ -11,7 +12,7 @@ import android.view.View;
  * {@link ServoEngine} (Servo browser engine).</p>
  *
  * <p>Callers interact exclusively through this interface so that
- * the host activity and {@link de.baumann.browser.view.NinjaWebView}
+ * the host activity and {@link de.baumann.browser.feature.browser.NinjaWebView}
  * remain engine-agnostic.</p>
  */
 public interface BrowserEngine {

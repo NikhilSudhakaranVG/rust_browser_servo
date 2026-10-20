@@ -1,4 +1,24 @@
-package de.baumann.browser.activity;
+package de.baumann.browser.feature.browser;
+import de.baumann.browser.feature.common.BrowserUnit;
+import de.baumann.browser.feature.common.HelperUnit;
+import de.baumann.browser.feature.common.NinjaToast;
+import de.baumann.browser.feature.common.PermissionCallback;
+import de.baumann.browser.feature.common.PermissionUtils;
+import de.baumann.browser.feature.data.AdapterRecord;
+import de.baumann.browser.feature.data.FaviconHelper;
+import de.baumann.browser.feature.data.Record;
+import de.baumann.browser.feature.data.RecordAction;
+import de.baumann.browser.feature.data.RecordUnit;
+import de.baumann.browser.feature.dialogs.AdapterMenu;
+import de.baumann.browser.feature.dialogs.AdapterSearch;
+import de.baumann.browser.feature.dialogs.CustomRedirectsDialog;
+import de.baumann.browser.feature.dialogs.MenuItem;
+import de.baumann.browser.feature.settings.AdapterCustomSearches;
+import de.baumann.browser.feature.settings.CustomRedirect;
+import de.baumann.browser.feature.settings.CustomSearchesHelper;
+import de.baumann.browser.feature.settings.DeleteUtils;
+import de.baumann.browser.feature.settings.Settings_Activity;
+import de.baumann.browser.feature.settings.Settings_Menu;
 
 import static android.content.ContentValues.TAG;
 import static android.os.Build.VERSION.SDK_INT;
@@ -120,34 +140,6 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import de.baumann.browser.R;
-import de.baumann.browser.browser.AlbumController;
-import de.baumann.browser.browser.BannerBlock;
-import de.baumann.browser.browser.BrowserContainer;
-import de.baumann.browser.browser.BrowserController;
-import de.baumann.browser.browser.List_standard;
-import de.baumann.browser.browser.NinjaDownloadListener;
-import de.baumann.browser.database.FaviconHelper;
-import de.baumann.browser.database.Record;
-import de.baumann.browser.database.RecordAction;
-import de.baumann.browser.dialogs.CustomRedirectsDialog;
-import de.baumann.browser.objects.CustomRedirect;
-import de.baumann.browser.objects.CustomSearchesHelper;
-import de.baumann.browser.unit.BrowserUnit;
-import de.baumann.browser.unit.DeleteUtils;
-import de.baumann.browser.unit.HelperUnit;
-import de.baumann.browser.unit.PermissionCallback;
-import de.baumann.browser.unit.PermissionUtils;
-import de.baumann.browser.unit.RecordUnit;
-import de.baumann.browser.view.AdapterCustomSearches;
-import de.baumann.browser.view.AdapterMenu;
-import de.baumann.browser.view.AdapterSearch;
-import de.baumann.browser.view.GridAdapter;
-import de.baumann.browser.view.GridItem;
-import de.baumann.browser.view.MenuItem;
-import de.baumann.browser.view.NinjaToast;
-import de.baumann.browser.view.NinjaWebView;
-import de.baumann.browser.view.AdapterRecord;
-import de.baumann.browser.view.SwipeTouchListener;
 
 public class BrowserActivity extends AppCompatActivity implements BrowserController {
 

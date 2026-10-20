@@ -1,4 +1,10 @@
-package de.baumann.browser.browser.engine;
+package de.baumann.browser.feature.browser.engine;
+import de.baumann.browser.feature.browser.AdBlock;
+import de.baumann.browser.feature.browser.BrowserActivity;
+import de.baumann.browser.feature.browser.BrowserController;
+import de.baumann.browser.feature.browser.List_standard;
+import de.baumann.browser.feature.browser.NinjaWebView;
+import de.baumann.browser.feature.common.HelperUnit;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
@@ -29,10 +35,6 @@ import androidx.webkit.WebViewFeature;
 import java.io.ByteArrayInputStream;
 import java.util.Objects;
 
-import de.baumann.browser.browser.AdBlock;
-import de.baumann.browser.browser.List_standard;
-import de.baumann.browser.unit.BrowserUnit;
-import de.baumann.browser.unit.HelperUnit;
 
 /**
  * {@link BrowserEngine} implementation backed by Android's {@link WebView}.
@@ -40,7 +42,7 @@ import de.baumann.browser.unit.HelperUnit;
  * <p>This adapter wraps the existing WebView + WebViewClient + WebChromeClient
  * stack so that the host can interact with it through the engine-agnostic
  * {@link BrowserEngine} interface. The goal is <em>zero behaviour change</em>
- * relative to the original {@link de.baumann.browser.view.NinjaWebView}
+ * relative to the original {@link de.baumann.browser.feature.browser.NinjaWebView}
  * implementation.</p>
  *
  * <p>All WebView-specific logic lives here. The host never imports

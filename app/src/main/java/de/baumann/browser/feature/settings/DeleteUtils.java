@@ -1,4 +1,4 @@
-package de.baumann.browser.unit;
+package de.baumann.browser.feature.settings;
 
 import android.content.Context;
 import android.content.SharedPreferences;

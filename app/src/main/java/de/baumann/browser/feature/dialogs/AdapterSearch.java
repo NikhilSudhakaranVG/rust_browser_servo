@@ -1,4 +1,7 @@
-package de.baumann.browser.view;
+package de.baumann.browser.feature.dialogs;
+import de.baumann.browser.feature.common.HelperUnit;
+import de.baumann.browser.feature.data.FaviconHelper;
+import de.baumann.browser.feature.data.Record;
 
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -24,9 +27,6 @@ import java.util.List;
 import java.util.Locale;
 
 import de.baumann.browser.R;
-import de.baumann.browser.database.FaviconHelper;
-import de.baumann.browser.database.Record;
-import de.baumann.browser.unit.HelperUnit;
 
 public class AdapterSearch extends BaseAdapter implements Filterable {
     private final Context context;

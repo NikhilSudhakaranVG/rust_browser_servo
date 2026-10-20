@@ -1,4 +1,7 @@
-package de.baumann.browser.activity;
+package de.baumann.browser.feature.settings;
+import de.baumann.browser.feature.common.BrowserUnit;
+import de.baumann.browser.feature.common.HelperUnit;
+import de.baumann.browser.feature.dialogs.MenuItem;
 
 import android.net.Uri;
 import android.os.Bundle;
@@ -12,9 +15,6 @@ import androidx.appcompat.widget.Toolbar;
 import java.util.Objects;
 
 import de.baumann.browser.R;
-import de.baumann.browser.fragment.Fragment_settings_Profile;
-import de.baumann.browser.unit.BrowserUnit;
-import de.baumann.browser.unit.HelperUnit;
 
 public class Settings_Profile extends AppCompatActivity {
 
