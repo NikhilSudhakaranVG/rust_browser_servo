@@ -30,11 +30,17 @@ public class BrowserContainer {
         }
     }
 
+    /**
+     * Removes a controller from the container.
+     *
+     * <p>This method deliberately does <em>not</em> destroy the underlying
+     * {@link NinjaWebView}. Destruction is a separate, explicit step, because
+     * a removed tab can still be re-added (undo of a tab swipe/close). Callers
+     * that really close a tab must call {@link NinjaWebView#destroy()}
+     * themselves.</p>
+     */
     public synchronized static void remove(AlbumController controller) {
         if (controller == null) return;
-        if (controller instanceof NinjaWebView) {
-            ((NinjaWebView) controller).destroy();
-        }
         list.remove(controller);
     }
 

@@ -790,6 +790,9 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
                 //if not the current TAB is being closed return to current TAB
                 int index = BrowserContainer.indexOf(controller);
                 BrowserContainer.remove(controller);
+                if (controller instanceof NinjaWebView) {
+                    ((NinjaWebView) controller).destroy();
+                }
                 if ((predecessor != null) && (BrowserContainer.indexOf(predecessor) != -1)) {
                     //if predecessor is stored and has not been closed in the meantime
                     showAlbum(predecessor);
@@ -1190,7 +1193,7 @@ public class BrowserActivity extends AppCompatActivity implements BrowserControl
             if (listView != null) listView.setVisibility(VISIBLE);
             if (overviewFabContainer != null) overviewFabContainer.setVisibility(GONE);
             if (fab_new_tab != null) fab_new_tab.setVisibility(GONE);
-            if (fab_new_incognito_tab != null) fab_new_tab.setVisibility(GONE);
+            if (fab_new_incognito_tab != null) fab_new_incognito_tab.setVisibility(GONE);
             if (btnCloseAllTabs != null) btnCloseAllTabs.setVisibility(GONE);
 
             RecordAction action = new RecordAction(context);
