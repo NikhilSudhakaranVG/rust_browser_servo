@@ -670,28 +670,60 @@
                 android:textAppearance="?attr/textAppearanceBodyLarge"
                 android:textStyle="bold"/>
 
-            <CheckBox
-                android:ellipsize="end"
-                android:maxLines="1"
-                android:id="@+id/checkbox_screenOn"
-                android:layoutDirection="rtl"
-                android:layout_marginStart="10dp"
-                android:layout_marginEnd="15dp"
-                android:text="@string/setting_title_screenOn"
+            <RelativeLayout
+                android:layout_marginStart="15dp"
+                android:layout_marginEnd="10dp"
                 android:layout_width="match_parent"
-                android:layout_height="?android:attr/listPreferredItemHeightSmall" />
+                android:layout_height="?android:attr/listPreferredItemHeightSmall">
 
-            <CheckBox
-                android:ellipsize="end"
-                android:maxLines="1"
-                android:id="@+id/checkbox_links"
-                android:layoutDirection="rtl"
-                android:layout_marginStart="10dp"
-                android:layout_marginEnd="15dp"
-                android:text="@string/dialog_backGround"
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_toStartOf="@+id/checkbox_screenOn"
+                    android:layout_alignParentStart="true"
+                    android:layout_centerVertical="true"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:paddingEnd="8dp"
+                    android:text="@string/setting_title_screenOn"
+                    android:textAppearance="?attr/textAppearanceBodyMedium" />
+
+                <CheckBox
+                    android:id="@+id/checkbox_screenOn"
+                    android:layout_width="wrap_content"
+                    android:layout_height="?android:attr/listPreferredItemHeightSmall"
+                    android:layout_alignParentEnd="true"
+                    android:layout_centerVertical="true" />
+
+            </RelativeLayout>
+
+            <RelativeLayout
+                android:layout_marginStart="15dp"
+                android:layout_marginEnd="10dp"
                 android:layout_width="match_parent"
                 android:layout_height="?android:attr/listPreferredItemHeightSmall"
-                tools:ignore="TooManyViews" />
+                tools:ignore="TooManyViews">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_toStartOf="@+id/checkbox_links"
+                    android:layout_alignParentStart="true"
+                    android:layout_centerVertical="true"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:paddingEnd="8dp"
+                    android:text="@string/dialog_backGround"
+                    android:textAppearance="?attr/textAppearanceBodyMedium" />
+
+                <CheckBox
+                    android:id="@+id/checkbox_links"
+                    android:layout_width="wrap_content"
+                    android:layout_height="?android:attr/listPreferredItemHeightSmall"
+                    android:layout_alignParentEnd="true"
+                    android:layout_centerVertical="true" />
+
+            </RelativeLayout>
 
             <RelativeLayout
                 android:layout_width="match_parent"
