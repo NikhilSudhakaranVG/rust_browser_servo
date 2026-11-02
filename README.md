@@ -54,6 +54,19 @@ FOSS Browser is built with Material You design libraries. Following system day/n
 - **Session restore**: Automatically restore open tabs upon restarting the browser — [`BrowserActivity.java`](app/src/main/java/de/baumann/browser/feature/browser/BrowserActivity.java).
 - **Keep screen on**: Prevent screen timeout during long reading sessions — [`BrowserActivity.java`](app/src/main/java/de/baumann/browser/feature/browser/BrowserActivity.java).
 
+#### Recent UI Refinements (Nov 2026)
+
+A focused pass of Material You polish across all core layouts:
+
+- **Bottom toolbar** (`activity_main.xml`): Progress bar is now full-width with rounded corners and a themed color; `fab_showAppBar` gains proper elevation (4 dp); all toolbar FABs get `pressedTranslationZ` for tactile press feedback; button row is vertically centred.
+- **Tab overview** (`dialog_overview.xml`): Header elevation raised to 4 dp for a clearer visual separation from content; bottom dock padding increased for better breathing room; new-tab FAB container moves 4 dp further from the edge.
+- **Tab cards** (`item_tab_card.xml`): Card elevation 2 → 3 dp; header height 44 → 48 dp (Material3 minimum touch target); close button 34 → 36 dp for easier one-handed dismissal.
+- **Home page** (`layout_home_page.xml`): Top padding reduced (48 → 40 dp); search bar margins tightened (28 → 20/24 dp); search bar gets a subtle 1 dp elevation lift.
+- **Fast-toggle dialog** (`dialog_fast_toggle.xml`): Screen-on and background-links checkboxes refactored from bare `CheckBox` elements into proper `RelativeLayout` rows with label `TextView` + end-aligned checkbox, matching the style of all other toggle rows.
+- **List items** (`item_list.xml`): Vertical padding 5 → 6 dp; icon card corner radius 4 → 8 dp for a softer, more modern look.
+- **Menu items** (`item_menu.xml`): Root width fixed to `match_parent`; icon given an explicit 22 × 22 dp size.
+- **Snackbar** (`custom_snackbar.xml`): Hardcoded `#FFFFFF` text colours replaced with `?attr/colorOnInverseSurface` / `?attr/colorOutline` for correct light/dark theme behaviour.
+
 ----
 
 ### Bookmarks & History
