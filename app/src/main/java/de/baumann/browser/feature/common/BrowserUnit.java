@@ -80,8 +80,15 @@ public class BrowserUnit {
     public static String queryWrapper(Context context, String query) {
 
         if (query.contains(";jsessionid=")) {
-            String tracking = query.substring(query.lastIndexOf(";"));
-            query = query.replace(tracking, "");
+            int jsessionIdIndex = query.indexOf(";jsessionid=");
+            int endIndex = query.indexOf('?', jsessionIdIndex);
+            if (endIndex < 0) {
+                // No query string after jsessionid, remove from jsessionid to end
+                query = query.substring(0, jsessionIdIndex);
+            } else {
+                // Remove jsessionid but preserve the rest of the query string
+                query = query.substring(0, jsessionIdIndex) + query.substring(endIndex);
+            }
         }
 
         if (isURL(query) || query.isEmpty()) {

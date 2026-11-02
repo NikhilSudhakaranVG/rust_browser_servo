@@ -1,5 +1,8 @@
 package de.baumann.browser.feature.common;
 
+// Custom styled toast notifications for FOSS Browser.
+// Provides various toast types with optional actions and better formatting.
+
 import android.content.Context;
 import android.widget.Toast;
 
