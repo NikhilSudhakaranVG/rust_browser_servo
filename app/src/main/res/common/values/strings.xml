@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="dialog_content_resubmission">Resubmit data?</string>
     <string name="app_never">Never</string>
@@ -167,6 +167,8 @@
     <string name="home_search_hint">Search or enter address</string>
     <string name="home_shortcuts">Shortcuts</string>
     <string name="home_add_shortcut">Add</string>
+    <!-- Accessibility: content description for a shortcut tile on the home screen (%1$s = site name) -->
+    <string name="home_shortcut_description">Shortcut to %1$s</string>
     <string name="home_remove_shortcut">Remove shortcut</string>
     <string name="home_open_new_tab">Open in new tab</string>
     <string name="home_choose_bookmark">Choose a bookmark</string>

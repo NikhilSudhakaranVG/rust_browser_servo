@@ -1,4 +1,4 @@
-/*
+﻿/*
     This file is part of the browser WebApp.
 
     browser WebApp is free software: you can redistribute it and/or modify
@@ -467,6 +467,7 @@ public class HelperUnit {
                 urlTextView.setVisibility(View.VISIBLE);
                 urlTextView.setText(link);
                 urlTextView.setTextColor(inversePrimaryColor);
+                urlTextView.setContentDescription(link);
 
                 ViewGroup.MarginLayoutParams params = (ViewGroup.MarginLayoutParams) urlTextView.getLayoutParams();
                 if (params != null) {
@@ -536,7 +537,23 @@ public class HelperUnit {
         layout.addView(customView, 0);
         snackbar.show();
     }
-    public static void makeSnackbarRound (Snackbar snackbar) {
+    /**
+     * Applies a rounded pill-shaped background to a standard {@link Snackbar}.
+     * Uses a default corner radius of 60px. For a custom radius use
+     * {@link #makeSnackbarRound(Snackbar, float)}.
+     */
+    public static void makeSnackbarRound(Snackbar snackbar) {
+        makeSnackbarRound(snackbar, 60f);
+    }
+
+    /**
+     * Applies a rounded background to a standard {@link Snackbar} with a
+     * configurable corner radius.
+     *
+     * @param snackbar     the snackbar to style
+     * @param cornerRadius corner radius in pixels
+     */
+    public static void makeSnackbarRound(Snackbar snackbar, float cornerRadius) {
         View snackbarView = snackbar.getView();
         TextView textView = snackbarView.findViewById(com.google.android.material.R.id.snackbar_text);
         if (textView != null) {
@@ -544,7 +561,7 @@ public class HelperUnit {
         }
         GradientDrawable background = new GradientDrawable();
         background.setShape(GradientDrawable.RECTANGLE);
-        background.setCornerRadius(60f);
+        background.setCornerRadius(cornerRadius);
         if (snackbarView.getBackground() instanceof ColorDrawable) {
             background.setColor(((ColorDrawable) snackbarView.getBackground()).getColor());
         } else {

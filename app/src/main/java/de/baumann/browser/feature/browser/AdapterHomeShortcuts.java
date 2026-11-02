@@ -10,6 +10,8 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.card.MaterialCardView;
@@ -17,6 +19,7 @@ import com.google.android.material.card.MaterialCardView;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 
 import de.baumann.browser.R;
 import de.baumann.browser.feature.data.FaviconHelper;
@@ -43,14 +46,49 @@ public class AdapterHomeShortcuts extends RecyclerView.Adapter<AdapterHomeShortc
     public AdapterHomeShortcuts(Context context, ShortcutListener listener) {
         this.context = context;
         this.listener = listener;
+        setHasStableIds(true);
     }
 
-    public void setShortcuts(List<Record> list) {
+    /**
+     * Updates the shortcut list using {@link DiffUtil} for efficient, animated
+     * updates instead of a full {@code notifyDataSetChanged()}.
+     */
+    public void setShortcuts(@Nullable List<Record> newList) {
+        List<Record> oldList = new ArrayList<>(shortcuts);
+        List<Record> safeNewList = (newList != null) ? newList : new ArrayList<>();
+
+        DiffUtil.DiffResult result = DiffUtil.calculateDiff(new DiffUtil.Callback() {
+            @Override public int getOldListSize() { return oldList.size(); }
+            @Override public int getNewListSize() { return safeNewList.size(); }
+
+            @Override
+            public boolean areItemsTheSame(int oldPos, int newPos) {
+                // Use URL as the stable identity of a shortcut
+                return Objects.equals(oldList.get(oldPos).getURL(), safeNewList.get(newPos).getURL());
+            }
+
+            @Override
+            public boolean areContentsTheSame(int oldPos, int newPos) {
+                Record o = oldList.get(oldPos);
+                Record n = safeNewList.get(newPos);
+                return Objects.equals(o.getURL(), n.getURL())
+                        && Objects.equals(o.getTitle(), n.getTitle());
+            }
+        });
+
         shortcuts.clear();
-        if (list != null) {
-            shortcuts.addAll(list);
+        shortcuts.addAll(safeNewList);
+        result.dispatchUpdatesTo(this);
+    }
+
+    @Override
+    public long getItemId(int position) {
+        if (position < shortcuts.size()) {
+            String url = shortcuts.get(position).getURL();
+            return url != null ? url.hashCode() : RecyclerView.NO_ID;
         }
-        notifyDataSetChanged();
+        // The "Add" tile has a fixed synthetic id
+        return Long.MIN_VALUE;
     }
 
     @Override
@@ -78,6 +116,10 @@ public class AdapterHomeShortcuts extends RecyclerView.Adapter<AdapterHomeShortc
 
             context.getTheme().resolveAttribute(com.google.android.material.R.attr.colorSurfaceContainer, typedValue, true);
             holder.card.setCardBackgroundColor(typedValue.data);
+
+            // Accessibility: describe the card as a shortcut to the site
+            String desc = item.getTitle() != null ? item.getTitle() : "";
+            holder.card.setContentDescription(context.getString(R.string.home_shortcut_description, desc));
 
             String url = item.getURL();
             Bitmap cachedBitmap = (url != null) ? sFaviconCache.get(url) : null;
@@ -132,6 +174,8 @@ public class AdapterHomeShortcuts extends RecyclerView.Adapter<AdapterHomeShortc
 
             context.getTheme().resolveAttribute(com.google.android.material.R.attr.colorSurfaceContainerHighest, typedValue, true);
             holder.card.setCardBackgroundColor(typedValue.data);
+
+            holder.card.setContentDescription(context.getString(R.string.home_add_shortcut));
 
             holder.icon.setImageResource(R.drawable.icon_add);
             holder.icon.setVisibility(View.VISIBLE);

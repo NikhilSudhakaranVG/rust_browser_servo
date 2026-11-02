@@ -1,4 +1,4 @@
-package de.baumann.browser.feature.browser;
+﻿package de.baumann.browser.feature.browser;
 
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -21,6 +21,9 @@ import com.google.android.material.card.MaterialCardView;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
+
+import androidx.recyclerview.widget.DiffUtil;
 
 import de.baumann.browser.R;
 import de.baumann.browser.feature.common.BrowserUnit;
@@ -45,13 +48,42 @@ public class TabGridAdapter extends RecyclerView.Adapter<TabGridAdapter.TabViewH
         this.listener = listener;
     }
 
-    public void setTabs(List<AlbumController> newTabs, AlbumController activeTab) {
+    /**
+     * Updates the tab list and active tab using {@link DiffUtil} for efficient,
+     * animated updates instead of a full {@code notifyDataSetChanged()}.
+     */
+    public void setTabs(List<AlbumController> newTabs, AlbumController newActiveTab) {
+        List<AlbumController> oldItems = new ArrayList<>(this.items);
+        AlbumController oldActiveTab = this.activeTab;
+
+        List<AlbumController> safeNewTabs = (newTabs != null) ? newTabs : new ArrayList<>();
+
+        DiffUtil.DiffResult result = DiffUtil.calculateDiff(new DiffUtil.Callback() {
+            @Override public int getOldListSize() { return oldItems.size(); }
+            @Override public int getNewListSize() { return safeNewTabs.size(); }
+
+            @Override
+            public boolean areItemsTheSame(int oldPos, int newPos) {
+                return oldItems.get(oldPos) == safeNewTabs.get(newPos);
+            }
+
+            @Override
+            public boolean areContentsTheSame(int oldPos, int newPos) {
+                AlbumController o = oldItems.get(oldPos);
+                AlbumController n = safeNewTabs.get(newPos);
+                // Content changes when the active-tab identity changes for this item
+                boolean wasActive = (o == oldActiveTab || o.isForeground());
+                boolean isActive  = (n == newActiveTab || n.isForeground());
+                return wasActive == isActive
+                        && Objects.equals(o.getTitle(), n.getTitle())
+                        && Objects.equals(o.getUrl(), n.getUrl());
+            }
+        });
+
         this.items.clear();
-        if (newTabs != null) {
-            this.items.addAll(newTabs);
-        }
-        this.activeTab = activeTab;
-        notifyDataSetChanged();
+        this.items.addAll(safeNewTabs);
+        this.activeTab = newActiveTab;
+        result.dispatchUpdatesTo(this);
     }
 
     public AlbumController getItem(int position) {
